@@ -4,14 +4,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="spannerdb",
+    name="spannerorm",
     version="0.0.1",
     author="Sanish Maharjan",
     author_email="sanishmaharjan@lftechnology.com",
     description="ORM for cloud spanner",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/sanishmaharjan/spanner-orm",
+    url="https://github.com/leapfrogtechnology/spanner-orm",
     packages=setuptools.find_packages(),
     classifiers=(
         "Programming Language :: Python :: 2.7",

@@ -1,3 +1,3 @@
-class SpannerExcption(Exception):
+class SpannerException(Exception):
     def __init__(self, message):
         self.message = message

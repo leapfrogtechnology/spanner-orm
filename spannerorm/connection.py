@@ -1,5 +1,5 @@
 from google.cloud import spanner
-from .spanner_exception import SpannerExcption
+from .spanner_exception import SpannerException
 from google.cloud.spanner_v1.database import Database
 
 
@@ -47,7 +47,7 @@ class Connection:
             with Connection._db_instance.snapshot() as snapshot:
                 snapshot.execute_sql('SELECT * FROM information_schema.tables AS t WHERE t.table_schema = ''')
         except Exception:
-            raise SpannerExcption('Fail to Connect Spanner Database')
+            raise SpannerException('Fail to Connect Spanner Database')
 
     @staticmethod
     def get_instance():
@@ -58,6 +58,6 @@ class Connection:
         :return: a database owned by this instance.
         """
         if Connection._db_instance is None:
-            raise SpannerExcption('Cloud Spanner database is not connected')
+            raise SpannerException('Cloud Spanner database is not connected')
 
         return Connection._db_instance
