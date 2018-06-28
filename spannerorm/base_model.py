@@ -8,7 +8,7 @@ from .query_builder import QueryBuilder
 from .spanner_exception import SpannerException
 
 
-class Model(object):
+class BaseModel(object):
     def __init__(self, *args, **kwargs):
         if self._meta().db_table is None:
             raise Exception("Error: {0} model's Meta.db_table is not set".format(self.__class__.__name__))
@@ -62,7 +62,7 @@ class Model(object):
         :type criteria: Criteria
         :param criteria:
 
-        :rtype: Model
+        :rtype: BaseModel
         :return: If exist return Model & None
         """
         if criteria is None:
