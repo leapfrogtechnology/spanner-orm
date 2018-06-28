@@ -1,8 +1,8 @@
 from google.cloud import spanner
-from spannerorm import Model, IntegerField, StringField, BoolField, TimeStampField, DateField
+from spannerorm import BaseModel, IntegerField, StringField, BoolField, TimeStampField, DateField
 
 
-class Temp(Model):
+class Temp(BaseModel):
     # Db Fields
     _id = StringField(db_column='id', null=False)
     _name = StringField(db_column='name', null=False)
