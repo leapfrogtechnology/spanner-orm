@@ -1,5 +1,5 @@
 import time
-import model
+import base_model
 from .helper import Helper
 from google.cloud.spanner_v1.streamed import StreamedResultSet
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
@@ -50,7 +50,7 @@ class DataParser(object):
         :type select_cols: list
         :param select_cols:
 
-        :type model_class: model.Model
+        :type model_class: base_model.BaseModel
         :param model_class:
 
         :rtype: list
@@ -75,7 +75,7 @@ class DataParser(object):
         """
         Map model props with db columns
 
-        :type model_class: model.Model
+        :type model_class: base_model.BaseModel
         :param model_class:
 
         :rtype: dict

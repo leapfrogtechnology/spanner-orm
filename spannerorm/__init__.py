@@ -1,4 +1,4 @@
-from .model import Model
+from .base_model import BaseModel
 from .connection import Connection
 from .criteria import Criteria
 from .executor import Executor

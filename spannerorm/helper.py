@@ -1,4 +1,4 @@
-import model
+import base_model
 import inspect
 from .dataType import *
 
@@ -33,7 +33,7 @@ class Helper(object):
         """
         Return model attr
 
-        :type model_cls: model.Model
+        :type model_cls: base_model.BaseModel
         :param model_cls: Model class
 
         :rtype: dict
@@ -50,7 +50,7 @@ class Helper(object):
         """
         Return model attribute by property
 
-        :type model_cls: model.Model
+        :type model_cls: base_model.BaseModel
         :param model_cls: Model class
 
         :type prop: property
