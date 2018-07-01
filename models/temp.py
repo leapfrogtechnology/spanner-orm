@@ -5,12 +5,12 @@ from spannerorm import BaseModel, IntegerField, StringField, BoolField, TimeStam
 class Temp(BaseModel):
     # Db Fields
     _id = StringField(db_column='id', null=False)
-    _name = StringField(db_column='name', null=False)
-    _address = StringField(db_column='address', null=False)
-    _points = IntegerField(db_column='points', default=0)
+    _name = StringField(db_column='name', null=False, reg_exr='^[A-Z][ a-z]+')
+    _address = StringField(db_column='address', null=True)
+    _points = IntegerField(db_column='points', default=0, min_value=10, max_value=1000)
     _is_active = BoolField(db_column='is_active', default=False)
     _join_date = DateField(db_column='join_date', null=False)
-    _modified_at = TimeStampField(db_column='modified_at', default=spanner.COMMIT_TIMESTAMP)
+    _modified_at = TimeStampField(db_column='modified_at', null=True, default=spanner.COMMIT_TIMESTAMP)
 
     # Transient field
     _details = None
@@ -70,10 +70,6 @@ class Temp(BaseModel):
     @modified_at.setter
     def modified_at(self, created):
         self._modified_at.value = created
-
-    @property
-    def details(self):
-        return self.name + ' (' + self.address + ')'
 
     class Meta:
         db_table = 'temp'
