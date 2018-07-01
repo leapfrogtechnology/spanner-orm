@@ -3,6 +3,7 @@ import inspect
 import base_model
 from .dataType import *
 from datetime import date
+from .dataType import DataType
 
 
 class Helper(object):
@@ -63,7 +64,6 @@ class Helper(object):
             attrs[key] = value
 
         return attrs
-
 
     @classmethod
     def get_model_props_key_value(cls, model_obj):
@@ -304,3 +304,69 @@ class Helper(object):
                 return False
 
         return True
+
+    @classmethod
+    def get_model_props_details(cls, model_cls):
+        """
+        Return model props details
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls:
+
+        :rtype: dict
+        :return:
+        """
+        model_props = Helper.get_model_props(model_cls)
+        model_attrs = Helper.get_model_attrs(model_cls)
+
+        props_details = {}
+        for prop_name in model_props:
+            model_attr_name = '_' + prop_name
+            if model_attrs.has_key(model_attr_name):
+                attr = model_attrs.get(model_attr_name)
+                props_details.update({
+                    prop_name: Helper.get_prop_details(attr)
+                })
+
+        return props_details
+
+    @classmethod
+    def get_prop_details(cls, attr):
+        """
+        Return model attr field details
+
+        :type attr: DataType
+        :param attr:
+
+        :rtype: dict
+        :return:
+        """
+        details = {
+            'db_column': attr.db_column,
+            'data_type': attr.data_type,
+            'null': attr.null,
+            'default_value': attr.default
+        }
+
+        if isinstance(attr, IntegerField):
+            details.update({
+                'max_value': attr.max_value,
+                'min_value': attr.min_value
+            })
+        if isinstance(attr, FloatField):
+            details.update({
+                'max_value': attr.max_value,
+                'min_value': attr.min_value,
+                'decimal_places': attr.decimal_places
+            })
+        if isinstance(attr, StringField):
+            details.update({
+                'max_length': attr.max_length,
+                'reg_exr': attr.reg_exr
+            })
+        if isinstance(attr, EnumField):
+            details.update({
+                'enum_list': attr.enum_list
+            })
+
+        return details
