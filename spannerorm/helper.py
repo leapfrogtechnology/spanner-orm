@@ -31,19 +31,19 @@ class Helper(object):
                | isinstance(v, DateField) | isinstance(v, TimeStampField) | isinstance(v, EnumField)
 
     @classmethod
-    def get_model_props(cls, model_obj):
+    def get_model_props(cls, model_cls):
         """
-        Return model props key-value
+        Return model props
 
-        :type model_obj: base_model.BaseModel
-        :param model_obj: model
+        :type model_cls: base_model.BaseModel
+        :param model_cls: model
 
         :rtype: dict
         :return:
         """
         model_props = {}
-        for key, value in inspect.getmembers(model_obj.__class__, Helper.is_property):
-            model_props[key] = model_obj.__getattribute__(key)
+        for key, value in inspect.getmembers(model_cls, Helper.is_property):
+            model_props[key] = value
 
         return model_props
 
@@ -63,6 +63,24 @@ class Helper(object):
             attrs[key] = value
 
         return attrs
+
+
+    @classmethod
+    def get_model_props_key_value(cls, model_obj):
+        """
+        Return model props key-value
+
+        :type model_obj: base_model.BaseModel
+        :param model_obj: model
+
+        :rtype: dict
+        :return:
+        """
+        model_props = {}
+        for key, value in inspect.getmembers(model_obj.__class__, Helper.is_property):
+            model_props[key] = model_obj.__getattribute__(key)
+
+        return model_props
 
     @classmethod
     def model_attr_by_prop(cls, model_cls, prop):

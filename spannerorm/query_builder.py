@@ -1,3 +1,4 @@
+import logging
 from .helper import Helper
 
 
@@ -131,13 +132,31 @@ class QueryBuilder:
         :rtype: str
         :return: query string
         """
-        select_query = 'SELECT ' + self._get_select_clause() + ' FROM ' + self.table_name + ' AS ' + self.meta.db_table + ' ' + self._get_where_clause() + ' ' + self._get_limit_clause()
-        print(select_query)
-        print(self.params)
-        print(self.param_types)
+        select_query = 'SELECT ' + self._get_select_clause() + ' FROM ' + self.table_name + ' AS ' + self.meta.db_table \
+                       + ' ' + self._get_where_clause() + ' ' + self._get_limit_clause()
+        logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 
     def get_count(self):
+        """
+        Build count query string
+
+        :rtype: str
+        :return: query string
+        """
         count_query = 'SELECT COUNT(*) FROM ' + self.table_name + ' AS ' + self.meta.db_table + ' ' + self._get_where_clause()
-        print(count_query)
+        logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', count_query, self.params, self.param_types)
         return count_query
+
+    def get_primary_keys(self):
+        """
+        Build query string that return primaries key base on criteria
+
+        :rtype: str
+        :return: query string
+        """
+        select_primary_key_query = 'SELECT ' + self.meta.primary_key + ' From ' + self.table_name + ' AS ' + self.meta.db_table \
+                                   + ' ' + self._get_where_clause() + ' ' + self._get_limit_clause()
+        logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_primary_key_query, self.params,
+                      self.param_types)
+        return select_primary_key_query
