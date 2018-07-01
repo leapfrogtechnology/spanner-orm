@@ -136,3 +136,8 @@ class QueryBuilder:
         print(self.params)
         print(self.param_types)
         return select_query
+
+    def get_count(self):
+        count_query = 'SELECT COUNT(*) FROM ' + self.table_name + ' AS ' + self.meta.db_table + ' ' + self._get_where_clause()
+        print(count_query)
+        return count_query
