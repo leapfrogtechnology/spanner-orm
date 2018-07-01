@@ -22,16 +22,16 @@ class BaseModel(object):
         self.__state__ = self.__class__.State()
 
     def __str__(self):
-        return Helper.get_model_props(self).__str__()
+        return Helper.get_model_props_key_value(self).__str__()
 
     def __dict__(self):
-        return Helper.get_model_props(self)
+        return Helper.get_model_props_key_value(self)
 
     def equals(self, obj):
         if isinstance(BaseModel, obj) is False:
             return False
 
-        return Helper.get_model_props(self) == Helper.get_model_props(obj)
+        return Helper.get_model_props_key_value(self) == Helper.get_model_props_key_value(obj)
 
     def _state(self):
         return self.__state__
@@ -114,6 +114,28 @@ class BaseModel(object):
         return DataParser.map_model(results, query_builder.select_cols, cls)
 
     @classmethod
+    def _fetch_primary_keys(cls, criteria):
+        """
+        Fetch primary keys by criteria
+
+        :type criteria: Criteria
+        :param criteria: select criteria
+
+        :rtype: list
+        :return:
+        """
+        query_builder = QueryBuilder(cls, criteria)
+        query_string = query_builder.get_primary_keys()
+        results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+        parse_results = DataParser.parse_result_set(results, [cls._meta().primary_key])
+
+        primary_keys = []
+        for row in parse_results:
+            primary_keys.append(row.get(cls._meta().primary_key))
+
+        return primary_keys
+
+    @classmethod
     def count(cls, criteria=None):
         """
         return count
@@ -134,22 +156,78 @@ class BaseModel(object):
         return result.one()[0]
 
     @classmethod
-    def delete_one(cls, criteria):
-        # Todo
-        id_list = [('3')]
-        Executor.delete_data(cls._meta().table_name, id_list)
+    def delete_one(cls, criteria=None):
+        """
+        Delete match first record that satisfied criteria
+
+        :type criteria: Criteria
+        :param criteria:
+
+        :rtype: bool
+        :return: true if success
+        """
+        if criteria is None:
+            criteria = Criteria()
+
+        criteria.limit = 1
+        primary_keys = cls._fetch_primary_keys(criteria)
+
+        pk_list = []
+        if len(primary_keys) != 0:
+            pk_list.append((primary_keys[0],))
+            Executor.delete_data(cls._meta().db_table, pk_list)
+
+        return True
 
     @classmethod
     def delete_by_pk(cls, pk):
-        pass
+        """
+        Delete record by primary key
+
+        :type pk: object
+        :param pk: primary key
+
+        :rtype: bool
+        :return: true if success
+
+        :raise: RuntimeError
+        """
+        criteria = Criteria()
+        criteria.add_condition((cls.primary_key_property(), '=', pk))
+        primary_keys = cls._fetch_primary_keys(criteria)
+
+        pk_list = []
+        if len(primary_keys) != 0:
+            pk_list.append((primary_keys[0],))
+            Executor.delete_data(cls._meta().db_table, pk_list)
+            return True
+        else:
+            raise RuntimeError('Record not exist with primary key : {}'.format(pk))
 
     @classmethod
     def delete_all(cls, criteria=None):
-        pass
+        """
+        Delete all record that satisfied criteria
 
-    @classmethod
-    def is_exist(cls, criteria):
-        pass
+        :type criteria: Criteria
+        :param criteria:
+
+        :rtype: bool
+        :return: return True if success
+        """
+        if criteria is None:
+            criteria = Criteria()
+
+        criteria.limit = 2
+        primary_keys = cls._fetch_primary_keys(criteria)
+
+        pk_list = []
+        if len(primary_keys) != 0:
+            for pk in primary_keys:
+                pk_list.append((pk,))
+            Executor.delete_data(cls._meta().db_table, pk_list)
+
+        return True
 
     @classmethod
     def find(cls, criteria=None):
@@ -204,8 +282,9 @@ class BaseModel(object):
         Executor.insert_data(cls._meta().db_table, columns, insert_data)
 
     @classmethod
-    def primary_key(cls):
-        pass
+    def primary_key_property(cls):
+        model_props = Helper.get_model_props(cls)
+        return model_props.get(cls._meta().primary_key)
 
     @classmethod
     def relations(cls):
@@ -276,4 +355,3 @@ class BaseModel(object):
         @errors.setter
         def errors(self, errors):
             self._errors = errors
-
