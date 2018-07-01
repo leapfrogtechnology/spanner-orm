@@ -82,7 +82,7 @@ class QueryBuilder:
 
                 where_clause += db_field + ' ' + operator + ' @' + param
 
-                self.params[param] = str(condition[2])
+                self.params[param] = condition[2]
                 self.param_types[param] = attr.data_type
 
         return where_clause

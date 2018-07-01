@@ -1,4 +1,5 @@
 import inspect
+import copy
 from .helper import Helper
 from .executor import Executor
 from .criteria import Criteria
@@ -16,8 +17,9 @@ class BaseModel(object):
         if self._meta().primary_key is None:
             raise SpannerException("Error: {0} model's Meta.primary_key is not set".format(self.__class__.__name__))
 
-        for key in kwargs.iterkeys():
-            self.__setattr__(key, kwargs.get(key))
+        model_attrs = Helper.get_model_attrs(self.__class__)
+        for attr_name in model_attrs:
+            self.__setattr__(attr_name, copy.deepcopy(model_attrs.get(attr_name)))
 
         self.__state__ = self.__class__.State()
 
@@ -27,19 +29,60 @@ class BaseModel(object):
     def __dict__(self):
         return Helper.get_model_props_key_value(self)
 
+    @classmethod
+    def get_instance(cls):
+        return cls()
+
     def equals(self, obj):
+        """
+        Compare two model object is equals or not
+
+        :type obj: BaseModel
+        :param obj: model object
+
+        :rtype: bool
+        :return: True if two model objects are equal
+        """
         if isinstance(BaseModel, obj) is False:
             return False
 
         return Helper.get_model_props_key_value(self) == Helper.get_model_props_key_value(obj)
 
     def _state(self):
+        """
+        Return model object states
+
+        :rtype: BaseModel.State
+        :return:
+        """
         return self.__state__
 
     def is_new_record(self):
+        """
+        Return is new record object or existing record object
+
+        :rtype: bool
+        :return: True if new record else False
+        """
         return self.__state__.is_new
 
+    def get_pk_value(self):
+        """
+        Return primary key value
+
+        :rtype: object
+        :return:
+        """
+        props = Helper.get_model_props_key_value(self)
+        return props.get(self._meta().primary_key)
+
     def get_errors(self):
+        """
+        Return validation errors
+
+        :rtype: dict
+        :return:
+        """
         return self.__state__.errors
 
     def before_save(self):
@@ -134,6 +177,37 @@ class BaseModel(object):
             primary_keys.append(row.get(cls._meta().primary_key))
 
         return primary_keys
+
+    @classmethod
+    def get_meta_data(cls):
+        """
+        Return model mata data
+
+        :rtype: dict
+        :return:
+        """
+        class_meta = cls._meta()
+        meta_data = {
+            'db_table': class_meta.db_table,
+            'primary_key': class_meta.primary_key,
+            'properties': Helper.get_model_props_details(cls)
+        }
+
+        return meta_data
+
+    @classmethod
+    def has_property(cls, property_name):
+        """
+        Check is model has property by name
+
+        :type property_name: str
+        :param property_name: Property name
+
+        :rtype: bool
+        :return: True if property exist else False
+        """
+        model_props = Helper.get_model_props(cls)
+        return model_props.has_key(property_name)
 
     @classmethod
     def count(cls, criteria=None):
@@ -255,23 +329,46 @@ class BaseModel(object):
 
     @classmethod
     def find_by_pk(cls, pk):
-        pass
+        """
+        Find record by primary key
+
+        :type pk: object
+        :param pk: primary key
+
+        :rtype: BaseModel
+        :return: If exist return Model & None
+        """
+        criteria = Criteria()
+        criteria.limit = 1
+        criteria.add_condition((cls.primary_key_property(), '=', pk))
+
+        query_builder = QueryBuilder(cls, criteria)
+        query_string = query_builder.get_query()
+        results = cls._fetch_query(query_string, query_builder)
+
+        if len(results) == 1:
+            return results[0]
+        else:
+            return None
 
     @classmethod
     def find_all(cls, criteria=None):
-        pass
+        """
+        Get records by criteria
 
-    @classmethod
-    def get_meta_data(cls):
-        pass
+        :type criteria: Criteria
+        :param criteria: select criteria
 
-    @classmethod
-    def get_primary_key_value(cls):
-        pass
+        :rtype: list
+        :return: list of records
+        """
+        if criteria is None:
+            criteria = Criteria()
 
-    @classmethod
-    def has_property(cls, property_name):
-        pass
+        query_builder = QueryBuilder(cls, criteria)
+        query_string = query_builder.get_query()
+
+        return cls._fetch_query(query_string, query_builder)
 
     @classmethod
     def insert(cls, columns, data):
