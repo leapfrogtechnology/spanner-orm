@@ -68,9 +68,9 @@ class QueryBuilder:
 
         for condition in condition_list:
             if isinstance(condition, dict):
-                sub_where_clause = self.build_where_clause(condition)
+                sub_where_clause = self._build_where_clause(condition)
                 if sub_where_clause != '':
-                    where_clause += '(' + self.build_where_clause(condition) + ')'
+                    where_clause += '(' + self._build_where_clause(condition) + ')'
             else:
                 self.params_count += 1
                 attr = Helper.model_attr_by_prop(self.model_class, condition[0])
@@ -134,11 +134,11 @@ class QueryBuilder:
         self.params = {}
         self.param_types = {}
 
-        where_clause = self.build_where_clause(where_conditions)
+        where_clause = self._build_where_clause(where_conditions)
 
         return 'WHERE ' + where_clause if where_clause else ''
 
-    def build_where_clause(self, where_conditions):
+    def _build_where_clause(self, where_conditions):
         """
         Build where clause
 
@@ -160,6 +160,29 @@ class QueryBuilder:
         else:
             return ''
 
+    def _get_order_by_clause(self):
+        """
+        Build order clause
+
+        :rtype: str
+        :return: order clause
+        """
+        order_by = self.criteria.order_by
+        table_name = self.meta.db_table
+        order_by_clause = ''
+
+        for prop in order_by.get('order_col'):
+            attr = Helper.model_attr_by_prop(self.model_class, prop)
+            if order_by_clause == '':
+                order_by_clause += table_name + '.' + attr.db_column
+            else:
+                order_by_clause += ', ' + table_name + '.' + attr.db_column
+
+        if order_by_clause != '':
+            return 'ORDER BY '+order_by_clause + ' ' + order_by.get('order')
+        else:
+            return ''
+
     def get_query(self):
         """
         Build query base on criteria and return query string
@@ -168,7 +191,7 @@ class QueryBuilder:
         :return: query string
         """
         select_query = 'SELECT ' + self._get_select_clause() + ' FROM ' + self.table_name + ' AS ' + self.meta.db_table \
-                       + ' ' + self._get_where_clause() + ' ' + self._get_limit_clause()
+                       + ' ' + self._get_where_clause() + ' ' + self._get_order_by_clause() + ' ' + self._get_limit_clause()
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 
