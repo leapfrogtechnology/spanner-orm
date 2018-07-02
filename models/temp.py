@@ -1,4 +1,5 @@
-from google.cloud import spanner
+from time import time
+from uuid import uuid4
 from spannerorm import BaseModel, IntegerField, StringField, BoolField, TimeStampField, DateField
 
 
@@ -8,9 +9,9 @@ class Temp(BaseModel):
     _name = StringField(db_column='name', null=False, reg_exr='^[A-Z][ a-z]+')
     _address = StringField(db_column='address', null=True)
     _points = IntegerField(db_column='points', default=0, min_value=10, max_value=1000)
-    _is_active = BoolField(db_column='is_active', default=False)
+    _is_active = BoolField(db_column='is_active', default=True)
     _join_date = DateField(db_column='join_date', null=False)
-    _modified_at = TimeStampField(db_column='modified_at', null=True, default=spanner.COMMIT_TIMESTAMP)
+    _modified_at = TimeStampField(db_column='modified_at', null=True, default=time())
 
     # Transient field
     _details = None
@@ -74,4 +75,7 @@ class Temp(BaseModel):
     class Meta:
         db_table = 'temp'
         primary_key = 'id'
-        auto_primary_key = True
+
+        @classmethod
+        def generate_pk(cls):
+            return uuid4()
