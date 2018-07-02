@@ -1,10 +1,9 @@
-import inspect
 import copy
+import inspect
 from .helper import Helper
 from .executor import Executor
 from .criteria import Criteria
 from .data_parser import DataParser
-from .prepare_data import PrepareData
 from .query_builder import QueryBuilder
 from .spanner_exception import SpannerException
 
@@ -83,32 +82,8 @@ class BaseModel(object):
         :rtype: dict
         :return:
         """
+        self.validate()
         return self.__state__.errors
-
-    def before_save(self):
-        """
-        Overwrite method on implementation class that execute before save
-        """
-        return
-
-    def before_update(self):
-        """
-        Overwrite method on implementation class that execute before update
-        """
-        return
-
-    def after_save(self):
-        """
-        Overwrite method on implementation class that execute after save
-        """
-        return
-
-    def after_update(self):
-        """
-        Overwrite method on implementation class that execute after update
-        :return:
-        """
-        return
 
     def validate(self):
         """
@@ -117,11 +92,15 @@ class BaseModel(object):
         :rtype: bool
         :return: True if model properties are valid else False
         """
+        is_valid = True
         for key, value in inspect.getmembers(self.__class__, Helper.is_property):
-            if self.validate_property(value) is False:
-                return False
+            prop_validation = self.validate_property(value)
+            if prop_validation.get('is_valid') is False:
+                is_valid = False
+                errors = self._state().errors
+                errors[key] = prop_validation.get('error_msg')
 
-        return True
+        return is_valid
 
     def validate_property(self, prop):
         """
@@ -130,8 +109,8 @@ class BaseModel(object):
         :type prop: property
         :param prop: model property
 
-        :rtype: bool
-        :return:
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
         return Helper.validate_model_prop(self, prop)
 
@@ -194,6 +173,17 @@ class BaseModel(object):
         }
 
         return meta_data
+
+    @classmethod
+    def primary_key_property(cls):
+        """
+        Return primary key property
+
+        :rtype: property
+        :return:
+        """
+        model_props = Helper.get_model_props(cls)
+        return model_props.get(cls._meta().primary_key)
 
     @classmethod
     def has_property(cls, property_name):
@@ -371,64 +361,93 @@ class BaseModel(object):
         return cls._fetch_query(query_string, query_builder)
 
     @classmethod
-    def insert(cls, columns, data):
-        # Todo
-        prepare_data = PrepareData(cls._meta().db_table)
-        insert_data = prepare_data.get_data()
-        columns = ('id', 'Active', 'Name', 'Subdomain')
-        Executor.insert_data(cls._meta().db_table, columns, insert_data)
+    def insert_block(cls, raw_data_list):
+        """
+        Insert data row
+
+        :type raw_data_list: list eg: [{'name': 'sanish', 'email': 'mjsanish@gmail.com}]
+        :param raw_data_list: insert data list
+
+        :rtype:
+        :return:
+        """
+        parse_raw_data = DataParser.parse_raw_data(cls, raw_data_list, insert=True)
+        Executor.insert_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
+
+        for model_object in parse_raw_data.get('model_list'):
+            model_object._state().is_new = False
+
+        return parse_raw_data.get('model_list')
 
     @classmethod
-    def primary_key_property(cls):
-        model_props = Helper.get_model_props(cls)
-        return model_props.get(cls._meta().primary_key)
-
-    @classmethod
-    def relations(cls):
-        pass
-
-    @classmethod
-    def validation_rules(cls):
-        pass
-
-    @classmethod
-    def attr_validation_rules(cls):
-        pass
+    def update_block(cls, raw_data_list):
+        parse_raw_data = DataParser.parse_raw_data(cls, raw_data_list, insert=False)
+        Executor.update_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
+        return parse_raw_data.get('model_list')
 
     @classmethod
     def save(cls, model_obj):
-        # Todo
-        prepare_data = PrepareData(cls._meta().db_table)
-        insert_data = prepare_data.get_data()
-        columns = ('id', 'name', 'address', 'points', 'is_active', 'join_date', 'modified_at')
-        Executor.save_data(cls._meta().db_table, columns, insert_data)
+        """
+        Add/Update model data
+
+        :type model_obj: BaseModel
+        :param model_obj: model object
+
+        :rtype: BaseModel
+        :return: model object
+        """
+        prepare_data = DataParser.build_model_data(cls, [model_obj])
+        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
+
+        model_object = prepare_data.get('model_list')[0]
+        model_object._state().is_new = False
+        return model_object
 
     @classmethod
     def save_all(cls, model_obj_list):
-        pass
+        """
+        Add / update all model data
 
-    @classmethod
-    def table_name(cls):
-        pass
+        :type model_obj_list: list
+        :param model_obj_list: list of model objects
 
-    @classmethod
-    def update(cls, columns, data):
-        # Todo
-        prepare_data = PrepareData(cls._meta().table_name)
-        insert_data = prepare_data.get_data()
-        columns = ('id', 'Active', 'Name', 'Subdomain')
-        Executor.update_data(cls._meta().table_name, columns, insert_data)
+        :rtype: list
+        :return: list of updated model objects
+        """
+        prepare_data = DataParser.build_model_data(cls, model_obj_list)
+        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
+
+        for model_object in prepare_data.get('model_list'):
+            model_object._state().is_new = False
+
+        return prepare_data.get('model_list')
 
     @classmethod
     def update_by_pk(cls, pk, data):
-        pass
+        """
+        Update model by primary key
 
-    @classmethod
-    def update_all(cls, criteria, data):
-        pass
+        :type pk: object
+        :param pk:
+
+        :type data: dict
+        :param data: data to update
+
+        :rtype: BaseModel
+        :return: updated model object
+        """
+        primary_key_name = cls._meta().primary_key
+        data[primary_key_name] = pk
+        parse_raw_data = DataParser.parse_raw_data(cls, [data], insert=False)
+        Executor.update_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
+        return parse_raw_data.get('model_list')[0]
 
     @classmethod
     def with_relation(cls):
+        pass
+
+    @classmethod
+    def relations(cls):
         pass
 
     class State(object):
