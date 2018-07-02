@@ -9,6 +9,10 @@ class Criteria(object):
         }
         self._limit = None
         self._offset = None
+        self._order_by = {
+            'order': 'ASC',
+            'order_col': ()
+        }
 
     @property
     def where(self):
@@ -21,6 +25,10 @@ class Criteria(object):
     @property
     def offset(self):
         return self._offset
+
+    @property
+    def order_by(self):
+        return self._order_by
 
     @limit.setter
     def limit(self, value):
@@ -85,7 +93,28 @@ class Criteria(object):
         :return:
         """
         self.CriteriaBuilder.build_where_criteria(self._where_condition, condition, operator)
-        print(self._where_condition)
+
+    def set_order_by(self, order_by_props, order='ASC'):
+        """
+        Set order by criteria
+
+        :type order_by_props: list | property
+        :param order_by_props: order by property or list of order by properties
+
+        :type order: str
+        :param order: 'ASC' OR 'DESC'
+        """
+        if order.upper() not in ['ASC', 'DESC']:
+            raise TypeError('order_by criteria order should be [ASC | DESC]')
+        if isinstance(order_by_props, property) is False and isinstance(order_by_props, list) is False:
+            raise TypeError('order_by_props data type should be [property | list]')
+
+        self._order_by['order'] = order.upper()
+        if isinstance(order_by_props, property):
+            self._order_by['order_col'] += (order_by_props,)
+        else:
+            for order_by_prop in order_by_props:
+                self._order_by['order_col'] += (order_by_prop,)
 
     class CriteriaBuilder(object):
 
@@ -161,7 +190,7 @@ class Criteria(object):
                     or sub_where_criteria.has_key('or_conditions') is False \
                     or isinstance(sub_where_criteria.get('or_conditions'), list) is False:
                 raise TypeError('Invalid where criteria data initialized: {}'.format(sub_where_criteria))
-            print(sub_condition)
+
             condition1 = sub_condition[0]
             condition2 = sub_condition[2]
             operator = sub_condition[1]
