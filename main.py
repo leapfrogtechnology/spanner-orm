@@ -5,7 +5,6 @@ from spannerorm import Connection, Criteria, ModelJSONEncoder
 from datetime import date
 import logging
 from uuid import uuid4
-from spannerorm import DataParser
 
 from models import Temp
 
@@ -15,18 +14,13 @@ app.json_encoder = ModelJSONEncoder
 Connection.config('develop', 'auth')
 
 
-# criteria = Criteria()
-# criteria.add_condition((Temp.name, '=', 'Sanish Maharjan'))
-# count = Temp.count(criteria)
-# print(count)
-# print(type(count))
-
 @app.route('/get')
 def get_records():
     start_time = time()
 
     criteria = Criteria()
     criteria.add_condition((Temp.name, 'LIKE', '%Sa%'))
+    criteria.set_order_by(Temp.name, order='ASC')
     temp = Temp.find(criteria)
     print("--- %s Application Execution time ---" % (time() - start_time))
 
@@ -40,6 +34,7 @@ def get_all_records():
     criteria = Criteria()
     criteria.add_condition((Temp.is_active, '=', True))
     criteria.limit = 2
+    criteria.set_order_by([Temp.name, Temp.address], order='DESC')
     # criteria.add_condition((Temp.join_date, '=', date(2018, 02, 20)))
     temps = Temp.find_all(criteria)
     print("--- %s Application Execution time ---" % (time() - start_time))
@@ -108,21 +103,7 @@ def update__by_pk():
 
 @app.route('/test')
 def test():
-    data_list = [{
-        "id": '8921e454-7161-44af-9b8b-1b84f81a22bc',
-        "is_active": True,
-        "join_date": date(2018, 02, 20),
-        "name": "Sanish Thapa",
-        "points": 150,
-    }, {
-        "address": "kalanki, Kathmandu",
-        "id": 'a11b77d2-827d-41e3-938b-9022174be22d',
-        "join_date": date(2018, 02, 20),
-        "name": "Rasna Shakya",
-        "points": 200
-    }]
 
-    DataParser.parse_update_raw_data(Temp, data_list, False)
     return 'success'
 
 if __name__ == '__main__':
