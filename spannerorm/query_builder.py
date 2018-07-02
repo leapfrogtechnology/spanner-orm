@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from .helper import Helper
 
 
@@ -80,12 +81,46 @@ class QueryBuilder:
                 if where_clause != '':
                     where_clause += ' AND '
 
-                where_clause += db_field + ' ' + operator + ' @' + param
+                if operator != 'IN' and operator != 'NOT IN':
+                    where_clause += db_field + ' ' + operator + ' @' + param
 
-                self.params[param] = condition[2]
-                self.param_types[param] = attr.data_type
+                    self.params[param] = condition[2]
+                    self.param_types[param] = attr.data_type
+                else:
+                    where_clause += db_field + ' ' + operator + ' ' + self._build_in_clause(condition[2])
 
         return where_clause
+
+    def _build_in_clause(self, in_values):
+        """
+        Build in clause
+
+        :type in_values: list
+        :param in_values: in values
+
+        :rtype: str
+        :return:
+        """
+        in_clause = ''
+        for value in in_values:
+            if isinstance(value, str):
+                if in_clause == '':
+                    in_clause += "'" + value + "'"
+                else:
+                    in_clause += ", '" + value + "'"
+            elif isinstance(value, date):
+                if in_clause == '':
+                    in_clause += "'" + value.strftime('%Y-%m-%d') + "'"
+                else:
+                    in_clause += ", '" + value.strftime('%Y-%m-%d') + "'"
+
+            else:
+                if in_clause == '':
+                    in_clause += value
+                else:
+                    in_clause += ', ' + value
+
+        return '(' + in_clause + ')'
 
     def _get_where_clause(self):
         """

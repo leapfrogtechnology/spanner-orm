@@ -107,6 +107,17 @@ class Helper(object):
         return model_attrs.get(model_attr_name)
 
     @classmethod
+    def get_db_columns(cls, model_cls):
+        model_attrs = Helper.get_model_attrs(model_cls)
+
+        columns = []
+        for attr_name in model_attrs:
+            attr = model_attrs.get(attr_name)
+            columns.append(attr.db_column)
+
+        return columns
+
+    @classmethod
     def validate_model_prop(cls, model_cls, prop):
         """
         Validate model attr
@@ -117,8 +128,8 @@ class Helper(object):
         :type prop: property
         :param prop:
 
-        :rtype: bool
-        :return:
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
         if isinstance(prop, property) is False:
             raise TypeError('Invalid object property')
@@ -143,7 +154,10 @@ class Helper(object):
             elif isinstance(attr, EnumField):
                 return Helper.validate_enum_field(attr.value, enum_list=attr.enum_list, null=attr.null)
 
-        return True
+        return {
+            'is_valid': True,
+            'error_msg': None
+        }
 
     @classmethod
     def validate_number_field(cls, value, max_value=None, min_value=None, null=True):
@@ -162,23 +176,33 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+
+        is_valid = True
+        error_msg = None
         if null is False and value is None:
-            return False
+            is_valid = False
+            error_msg = 'Property value should not be None'
 
         if value is not None:
             if isinstance(value, int) is False:
-                return False
+                is_valid = False
+                error_msg = 'Data type should be <int>'
 
             if max_value is not None and value > max_value:
-                return False
+                is_valid = False
+                error_msg = 'Max allow value: {}'.format(max_value)
 
             if min_value is not None and value < min_value:
-                return False
+                is_valid = False
+                error_msg = 'Min allow value: {}'.format(min_value)
 
-        return True
+        return {
+            'is_valid' : is_valid,
+            'error_msg' : error_msg
+        }
 
     @classmethod
     def validate_string_field(cls, value, max_length=None, reg_exr=None, null=True):
@@ -194,24 +218,34 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+        is_valid = True
+        error_msg = None
         if null is False and (value is None or value.strip() == ''):
-            return False
+            is_valid = False
+            error_msg = 'Data should not be None or empty'
 
         if value is not None:
             if isinstance(value, str) is False:
-                return False
+                is_valid = False
+                error_msg = 'Data type should be <str>'
 
             if max_length is not None and len(value) > max_length:
-                return False
+                is_valid = False
+                error_msg = 'Max allow string length: {}'.format(max_length)
+
             if reg_exr is not None:
                 pattern = re.compile(reg_exr)
                 if pattern.match(value) is None:
-                    return False
+                    is_valid = False
+                    error_msg = 'String should match regex pattern: {}'.format(reg_exr)
 
-        return True
+        return {
+            'is_valid': is_valid,
+            'error_msg': error_msg
+        }
 
     @classmethod
     def validate_bool_field(cls, value, null=True):
@@ -224,16 +258,23 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+        is_valid = True
+        error_msg = None
         if null is False and value is None:
-            return False
+            is_valid = False
+            error_msg = 'Data should not be None'
 
         if value is not None and isinstance(value, bool) is False:
-            return False
+            is_valid = False
+            error_msg = 'Data type should be <bool>'
 
-        return True
+        return {
+            'is_valid': is_valid,
+            'error_msg': error_msg
+        }
 
     @classmethod
     def validate_timestamp_field(cls, value, null=True):
@@ -246,16 +287,23 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+        is_valid = True
+        error_msg = None
         if null is False and value is None:
-            return False
+            is_valid = False
+            error_msg = 'Data should not be None'
 
         if value is not None and isinstance(value, int) is False and isinstance(value, float) is False:
-            return False
+            is_valid = False
+            error_msg = 'Data type should be <float> or <int> timestamp'
 
-        return True
+        return {
+            'is_valid': is_valid,
+            'error_msg': error_msg
+        }
 
     @classmethod
     def validate_date_field(cls, value, null=True):
@@ -268,16 +316,23 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+        is_valid = True
+        error_msg = None
         if null is False and value is None:
-            return False
+            is_valid = False
+            error_msg = 'Data should not be None'
 
         if value is not None and isinstance(value, date) is False:
-            return False
+            is_valid = False
+            error_msg = 'Data type should be <datetime.date>'
 
-        return True
+        return {
+            'is_valid': is_valid,
+            'error_msg': error_msg
+        }
 
     @classmethod
     def validate_enum_field(cls, value, enum_list, null=True):
@@ -293,17 +348,24 @@ class Helper(object):
         :type null: bool
         :param null: is allow None value
 
-        :rtype: bool
-        :return: True if valid else False
+        :rtype: dict
+        :return: {'is_valid':bool, 'error_msg':str}
         """
+        is_valid = True
+        error_msg = None
         if null is False and value is None:
-            return False
+            is_valid = False
+            error_msg = 'Data should not be None'
 
         if value is not None:
             if value in enum_list is False:
-                return False
+                is_valid = False
+                error_msg = 'Data value should be from list: {}'.format(enum_list)
 
-        return True
+        return {
+            'is_valid': is_valid,
+            'error_msg': error_msg
+        }
 
     @classmethod
     def get_model_props_details(cls, model_cls):
@@ -370,3 +432,23 @@ class Helper(object):
             })
 
         return details
+
+    @classmethod
+    def init_model_with_default(cls, model_class):
+        """
+        Init model object with default values
+
+        :type model_class: base_model.BaseModel
+        :param model_class:
+
+        :rtype: base_model.BaseModel
+        :return: model object
+        """
+        model_object = model_class()
+        model_attrs = Helper.get_model_attrs(model_object)
+        for attr_name in model_attrs:
+            attr = model_attrs.get(attr_name)
+            if attr.default is not None:
+                attr.value = attr.default
+
+        return model_object
