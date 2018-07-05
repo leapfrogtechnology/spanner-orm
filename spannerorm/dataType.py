@@ -1,3 +1,6 @@
+import copy
+import helper
+from functools import wraps
 from google.cloud.spanner_v1.proto.type_pb2 import Type, INT64, FLOAT64, STRING, BOOL, BYTES, TIMESTAMP, DATE
 
 
@@ -7,6 +10,57 @@ class DataType:
         self.null = null
         self.db_column = db_column
         self.default = default
+
+    @staticmethod
+    def get(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            model_obj = args[0]
+            data_field = function(*args, **kwargs)
+            return data_field.value
+
+        return wrapper
+
+    @staticmethod
+    def set(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            model_obj = args[0]
+            value = args[1]
+
+            model_attr = helper.Helper.model_attr_by_prop_name(model_obj, function.__name__)
+            attr = copy.deepcopy(model_attr)
+            attr.value = value
+
+            if isinstance(attr, IntegerField) or isinstance(attr, FloatField):
+                validation = helper.Helper.validate_number_field(attr.value, max_value=attr.max_value,
+                                                                 min_value=attr.min_value, null=attr.null)
+            elif isinstance(attr, StringField):
+                validation = helper.Helper.validate_string_field(attr.value, max_length=attr.max_length,
+                                                                 reg_exr=attr.reg_exr, null=attr.null)
+            elif isinstance(attr, BoolField):
+                validation = helper.Helper.validate_bool_field(attr.value, null=attr.null)
+            elif isinstance(attr, TimeStampField):
+                validation = helper.Helper.validate_timestamp_field(attr.value, null=attr.null)
+            elif isinstance(attr, DateField):
+                validation = helper.Helper.validate_date_field(attr.value, null=attr.null)
+            elif isinstance(attr, EnumField):
+                validation = helper.Helper.validate_enum_field(attr.value, enum_list=attr.enum_list, null=attr.null)
+            else:
+                validation = {
+                    'is_valid': False,
+                    'error_msg': 'Invalid DataField'
+                }
+
+            if validation.get('is_valid'):
+                return function(model_obj, attr)
+            else:
+                error = {
+                    function.__name__: validation
+                }
+                raise RuntimeError('Data validation error: {}'.format(error))
+
+        return wrapper
 
 
 class IntegerField(DataType):

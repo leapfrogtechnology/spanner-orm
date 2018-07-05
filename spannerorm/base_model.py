@@ -443,12 +443,9 @@ class BaseModel(object):
         return parse_raw_data.get('model_list')[0]
 
     @classmethod
-    def with_relation(cls):
-        pass
-
-    @classmethod
     def relations(cls):
-        pass
+        meta_class = cls._meta()
+        return meta_class.relations
 
     class State(object):
         _is_new = True
