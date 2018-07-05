@@ -6,7 +6,7 @@ from datetime import date
 import logging
 from uuid import uuid4
 
-from models import Temp
+from models import Temp, User
 
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
@@ -103,7 +103,19 @@ def update__by_pk():
 
 @app.route('/test')
 def test():
-
+    user = User()
+    user.role_id = '8921e454-7161-44af-9b8b-1b84f81a22bc'
+    user.password = 12345
+    print('======================')
+    print(user.role_id)
+    print(user.password)
+    user.role = 'sanish'
+    response = user.role
+    print(response)
+    #relations = User.relations()
+    #for name in relations:
+    #    relation = relations.get(name)
+    #    print(relation.reference_model)
     return 'success'
 
 if __name__ == '__main__':

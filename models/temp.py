@@ -17,60 +17,74 @@ class Temp(BaseModel):
     _details = None
 
     @property
+    @StringField.get
     def id(self):
-        return self._id.value
+        return self._id
 
     @id.setter
+    @StringField.set
     def id(self, id):
-        self._id.value = id
+        self._id = id
 
     @property
+    @StringField.get
     def name(self):
-        return self._name.value
+        return self._name
 
     @name.setter
+    @StringField.set
     def name(self, name):
-        self._name.value = name
+        self._name = name
 
     @property
+    @StringField.get
     def address(self):
-        return self._address.value
+        return self._address
 
     @address.setter
+    @StringField.set
     def address(self, sub_domain):
-        self._address.value = sub_domain
+        self._address = sub_domain
 
     @property
+    @IntegerField.get
     def points(self):
-        return self._points.value
+        return self._points
 
     @points.setter
+    @IntegerField.set
     def points(self, points):
-        self._points.value = points
+        self._points = points
 
     @property
+    @BoolField.get
     def is_active(self):
-        return self._is_active.value
+        return self._is_active
 
     @is_active.setter
+    @BoolField.set
     def is_active(self, active):
-        self._is_active.value = active
+        self._is_active = active
 
     @property
+    @DateField.get
     def join_date(self):
-        return self._join_date.value
+        return self._join_date
 
     @join_date.setter
+    @DateField.set
     def join_date(self, created):
-        self._join_date.value = created
+        self._join_date = created
 
     @property
+    @TimeStampField.get
     def modified_at(self):
-        return self._modified_at.value
+        return self._modified_at
 
     @modified_at.setter
+    @TimeStampField.set
     def modified_at(self, created):
-        self._modified_at.value = created
+        self._modified_at = created
 
     class Meta:
         db_table = 'temp'
