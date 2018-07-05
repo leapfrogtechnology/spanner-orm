@@ -4,6 +4,7 @@ import base_model
 from .dataType import *
 from datetime import date
 from .dataType import DataType
+from .relation import Relation
 
 
 class Helper(object):
@@ -30,6 +31,16 @@ class Helper(object):
         return isinstance(v, StringField) | isinstance(v, IntegerField) | isinstance(v, BoolField) \
                | isinstance(v, IntegerField) | isinstance(v, FloatField) | isinstance(v, BytesField) \
                | isinstance(v, DateField) | isinstance(v, TimeStampField) | isinstance(v, EnumField)
+
+    @classmethod
+    def is_relational_attr(cls, v):
+        """
+        Check is model relational attr
+
+        :type: object
+        :param v:
+        """
+        return isinstance(v, Relation)
 
     @classmethod
     def get_model_props(cls, model_cls):
@@ -61,6 +72,23 @@ class Helper(object):
         """
         attrs = {}
         for key, value in inspect.getmembers(model_cls, Helper.is_attr):
+            attrs[key] = value
+
+        return attrs
+
+    @classmethod
+    def get_model_relations_attrs(cls, model_cls):
+        """
+        Return model relation attrs
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls: Model class
+
+        :rtype: dict
+        :return: model relational attributes in key value pairs
+        """
+        attrs = {}
+        for key, value in inspect.getmembers(model_cls, Helper.is_relational_attr):
             attrs[key] = value
 
         return attrs
@@ -99,8 +127,64 @@ class Helper(object):
         if isinstance(prop, property) is False:
             raise TypeError('Invalid object property')
 
-        model_attr_name = '_' + prop.fget.__name__
+        return Helper.model_attr_by_prop_name(model_cls, prop.fget.__name__)
+
+    @classmethod
+    def model_attr_by_prop_name(cls, model_cls, prop_name):
+        """
+        Return model attribute by property name
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls: Model class
+
+        :type prop_name: str
+        :param prop_name: Model class property name
+
+        :rtype: DataType
+        :return: Model attribute
+        """
+        model_attr_name = '_' + prop_name
         model_attrs = Helper.get_model_attrs(model_cls)
+        if model_attrs.has_key(model_attr_name) is False:
+            raise TypeError('Criteria model property {} not exist'.format(model_attr_name))
+
+        return model_attrs.get(model_attr_name)
+
+    @classmethod
+    def model_relational_attr_by_prop(cls, model_cls, prop):
+        """
+        Return model relational attribute by property
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls: Model class
+
+        :type prop: property
+        :param prop: Model class property
+
+        :rtype: Relation
+        :return: Model relational attribute
+        """
+        if isinstance(prop, property) is False:
+            raise TypeError('Invalid object property')
+
+        return Helper.model_relational_attr_by_prop_name(model_cls, prop.fget.__name__)
+
+    @classmethod
+    def model_relational_attr_by_prop_name(cls, model_cls, prop_name):
+        """
+        Return model relational attribute by property name
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls: Model class
+
+        :type prop_name: str
+        :param prop_name: Model class property name
+
+        :rtype: Relation
+        :return: Model relational attribute
+        """
+        model_attr_name = '_' + prop_name
+        model_attrs = Helper.get_model_relations_attrs(model_cls)
         if model_attrs.has_key(model_attr_name) is False:
             raise TypeError('Criteria model property {} not exist'.format(model_attr_name))
 
@@ -200,8 +284,8 @@ class Helper(object):
                 error_msg = 'Min allow value: {}'.format(min_value)
 
         return {
-            'is_valid' : is_valid,
-            'error_msg' : error_msg
+            'is_valid': is_valid,
+            'error_msg': error_msg
         }
 
     @classmethod
