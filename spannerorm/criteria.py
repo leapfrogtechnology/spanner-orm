@@ -13,6 +13,7 @@ class Criteria(object):
             'order': 'ASC',
             'order_col': ()
         }
+        self._join_withs = []
 
     @property
     def where(self):
@@ -29,6 +30,10 @@ class Criteria(object):
     @property
     def order_by(self):
         return self._order_by
+
+    @property
+    def join_relations(self):
+        return self._join_withs
 
     @limit.setter
     def limit(self, value):
@@ -92,7 +97,7 @@ class Criteria(object):
         :param operator:
         :return:
         """
-        self.CriteriaBuilder.build_where_criteria(self._where_condition, condition, operator)
+        CriteriaBuilder.build_where_criteria(self._where_condition, condition, operator)
 
     def set_order_by(self, order_by_props, order='ASC'):
         """
@@ -116,91 +121,108 @@ class Criteria(object):
             for order_by_prop in order_by_props:
                 self._order_by['order_col'] += (order_by_prop,)
 
-    class CriteriaBuilder(object):
+    def join_with(self, relation, join_type='LEFT'):
+        """
+        Add join with criteria
 
-        @classmethod
-        def build_where_criteria(cls, where_criteria, condition, operator):
-            """
-            Build where criteria from condition
+        :type relation: property
+        :param relation: model relation property
 
-            :type where_criteria: dict
-            :param where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
+        :type join_type: str
+        :param join_type: Join type ['LEFT', 'RIGHT', 'FULL']
+        """
+        if isinstance(relation, property) is False:
+            raise TypeError('join_with: should be relational property')
+        if join_type.upper() not in ['LEFT', 'RIGHT', 'FULL']:
+            raise TypeError('join_type should be [LEFT | RIGHT | FULL]')
 
-            :type condition: tuple
-            :param condition: sub condition like:
-                (User.active, '=', True)
-                ((User.active, '=', True), 'OR', (User.name, '=', 'sanish'))
-                ((User.active, '=', True), 'AND', (User.name, '=', 'sanish'))
-                ((User.active, '=', True), 'AND', ((User.name, '=', 'sanish'), 'AND', (User.gender, '=', 'Male')))
+        self._join_withs.append({'relation': relation, 'join_type': join_type})
 
-            :param operator:
-            :return:
-            """
-            valid_where_operator = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN']
+class CriteriaBuilder(object):
 
-            if isinstance(operator, str) is False or operator.upper() not in ['AND', 'OR']:
-                raise TypeError('operator: should be [AND | OR]')
-            if isinstance(condition, tuple) is False:
-                raise TypeError('criteria condition: dataType should be tuple')
-            if len(condition) != 3:
-                raise TypeError('Invalid criteria condition: {}'.format(condition))
+    @classmethod
+    def build_where_criteria(cls, where_criteria, condition, operator):
+        """
+        Build where criteria from condition
 
-            # if condition like: ('active', '=', True)
-            elif isinstance(condition[0], property) is True:
-                if condition[1] not in valid_where_operator:
-                    raise TypeError('Compare-operator should be in [=, >, <, >=, <=, <>, LIKE, IN, NOT IN]')
+        :type where_criteria: dict
+        :param where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
 
-                if operator.upper() == 'AND':
-                    where_criteria.get('and_conditions').append(condition)
-                else:
-                    where_criteria.get('or_conditions').append(condition)
+        :type condition: tuple
+        :param condition: sub condition like:
+            (User.active, '=', True)
+            ((User.active, '=', True), 'OR', (User.name, '=', 'sanish'))
+            ((User.active, '=', True), 'AND', (User.name, '=', 'sanish'))
+            ((User.active, '=', True), 'AND', ((User.name, '=', 'sanish'), 'AND', (User.gender, '=', 'Male')))
 
-                return where_criteria
-            # if condition like: (('active', '=', True), 'OR', ('name', '=', 'sanish'))
-            elif isinstance(condition[0], tuple) is True:
-                child_where_criteria = {
-                    'and_conditions': [],
-                    'or_conditions': []
-                }
+        :param operator:
+        :return:
+        """
+        valid_where_operator = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN']
 
-                cls.build_sub_where_criteria(child_where_criteria, condition)
-                if operator.upper() == 'AND':
-                    where_criteria.get('and_conditions').append(child_where_criteria)
-                else:
-                    where_criteria.get('or_conditions').append(child_where_criteria)
+        if isinstance(operator, str) is False or operator.upper() not in ['AND', 'OR']:
+            raise TypeError('operator: should be [AND | OR]')
+        if isinstance(condition, tuple) is False:
+            raise TypeError('criteria condition: dataType should be tuple')
+        if len(condition) != 3:
+            raise TypeError('Invalid criteria condition: {}'.format(condition))
+
+        # if condition like: ('active', '=', True)
+        elif isinstance(condition[0], property) is True:
+            if condition[1] not in valid_where_operator:
+                raise TypeError('Compare-operator should be in [=, >, <, >=, <=, <>, LIKE, IN, NOT IN]')
+
+            if operator.upper() == 'AND':
+                where_criteria.get('and_conditions').append(condition)
             else:
-                raise TypeError('Invalid criteria condition: {}'.format(condition))
+                where_criteria.get('or_conditions').append(condition)
 
-        @classmethod
-        def build_sub_where_criteria(cls, sub_where_criteria, sub_condition):
-            """
-            Build sub where criteria form sub_condition ((sub_condition1), operator, (sub_condition2))
-            eg. (('active', '=', True), 'OR', ('name', '=', 'sanish'))
+            return where_criteria
+        # if condition like: (('active', '=', True), 'OR', ('name', '=', 'sanish'))
+        elif isinstance(condition[0], tuple) is True:
+            child_where_criteria = {
+                'and_conditions': [],
+                'or_conditions': []
+            }
 
-            :type sub_where_criteria: dict
-            :param sub_where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
+            cls.build_sub_where_criteria(child_where_criteria, condition)
+            if operator.upper() == 'AND':
+                where_criteria.get('and_conditions').append(child_where_criteria)
+            else:
+                where_criteria.get('or_conditions').append(child_where_criteria)
+        else:
+            raise TypeError('Invalid criteria condition: {}'.format(condition))
 
-            :type sub_condition: tuple
-            :param sub_condition: sub condition (('active', '=', True), 'OR', ('name', '=', 'sanish'))
-            """
-            if isinstance(sub_condition, tuple) is False or len(sub_condition) != 3:
-                raise TypeError('Invalid criteria condition: {}'.format(sub_condition))
-            if sub_where_criteria.has_key('and_conditions') is False \
-                    or isinstance(sub_where_criteria.get('and_conditions'), list) is False \
-                    or sub_where_criteria.has_key('or_conditions') is False \
-                    or isinstance(sub_where_criteria.get('or_conditions'), list) is False:
-                raise TypeError('Invalid where criteria data initialized: {}'.format(sub_where_criteria))
+    @classmethod
+    def build_sub_where_criteria(cls, sub_where_criteria, sub_condition):
+        """
+        Build sub where criteria form sub_condition ((sub_condition1), operator, (sub_condition2))
+        eg. (('active', '=', True), 'OR', ('name', '=', 'sanish'))
 
-            condition1 = sub_condition[0]
-            condition2 = sub_condition[2]
-            operator = sub_condition[1]
+        :type sub_where_criteria: dict
+        :param sub_where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
 
-            if isinstance(condition1, tuple) is False:
-                raise TypeError('Invalid criteria condition: {}'.format(condition1))
-            if isinstance(condition2, tuple) is False:
-                raise TypeError('Invalid criteria condition: {}'.format(condition2))
-            if isinstance(operator, str) is False or operator not in ['AND', 'OR']:
-                raise TypeError('criteria {} operator: should be [AND | OR]'.format(sub_condition))
+        :type sub_condition: tuple
+        :param sub_condition: sub condition (('active', '=', True), 'OR', ('name', '=', 'sanish'))
+        """
+        if isinstance(sub_condition, tuple) is False or len(sub_condition) != 3:
+            raise TypeError('Invalid criteria condition: {}'.format(sub_condition))
+        if sub_where_criteria.has_key('and_conditions') is False \
+                or isinstance(sub_where_criteria.get('and_conditions'), list) is False \
+                or sub_where_criteria.has_key('or_conditions') is False \
+                or isinstance(sub_where_criteria.get('or_conditions'), list) is False:
+            raise TypeError('Invalid where criteria data initialized: {}'.format(sub_where_criteria))
 
-            cls.build_where_criteria(sub_where_criteria, condition1, operator.upper())
-            cls.build_where_criteria(sub_where_criteria, condition2, operator.upper())
+        condition1 = sub_condition[0]
+        condition2 = sub_condition[2]
+        operator = sub_condition[1]
+
+        if isinstance(condition1, tuple) is False:
+            raise TypeError('Invalid criteria condition: {}'.format(condition1))
+        if isinstance(condition2, tuple) is False:
+            raise TypeError('Invalid criteria condition: {}'.format(condition2))
+        if isinstance(operator, str) is False or operator not in ['AND', 'OR']:
+            raise TypeError('criteria {} operator: should be [AND | OR]'.format(sub_condition))
+
+        cls.build_where_criteria(sub_where_criteria, condition1, operator.upper())
+        cls.build_where_criteria(sub_where_criteria, condition2, operator.upper())
