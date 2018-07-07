@@ -6,6 +6,7 @@ from .criteria import Criteria
 from .data_parser import DataParser
 from .query_builder import QueryBuilder
 from .spanner_exception import SpannerException
+from .relation import Relation
 
 
 class BaseModel(object):
@@ -20,13 +21,24 @@ class BaseModel(object):
         for attr_name in model_attrs:
             self.__setattr__(attr_name, copy.deepcopy(model_attrs.get(attr_name)))
 
-        self.__state__ = self.__class__.State()
+        model_relation_attrs = Helper.get_model_relations_attrs(self.__class__)
+        for attr_name in model_relation_attrs:
+            self.__setattr__(attr_name, Relation.copy_instance(model_relation_attrs.get(attr_name)))
+
+        self.__state__ = self.__class__.ModelState()
 
     def __str__(self):
         return Helper.get_model_props_key_value(self).__str__()
 
     def __dict__(self):
-        return Helper.get_model_props_key_value(self)
+        model_props = {}
+        relation_attrs = Helper.get_model_relations_attrs(self)
+        for key, value in inspect.getmembers(self.__class__, Helper.is_property):
+            attr_name = '_' + key
+            if relation_attrs.has_key(attr_name) is False or key in self._model_state().with_relation:
+                model_props[key] = self.__getattribute__(key)
+
+        return model_props
 
     @classmethod
     def get_instance(cls):
@@ -47,7 +59,7 @@ class BaseModel(object):
 
         return Helper.get_model_props_key_value(self) == Helper.get_model_props_key_value(obj)
 
-    def _state(self):
+    def _model_state(self):
         """
         Return model object states
 
@@ -97,7 +109,7 @@ class BaseModel(object):
             prop_validation = self.validate_property(value)
             if prop_validation.get('is_valid') is False:
                 is_valid = False
-                errors = self._state().errors
+                errors = self._model_state().errors
                 errors[key] = prop_validation.get('error_msg')
 
         return is_valid
@@ -375,7 +387,7 @@ class BaseModel(object):
         Executor.insert_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
 
         for model_object in parse_raw_data.get('model_list'):
-            model_object._state().is_new = False
+            model_object._model_state().is_new = False
 
         return parse_raw_data.get('model_list')
 
@@ -400,7 +412,7 @@ class BaseModel(object):
         Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
 
         model_object = prepare_data.get('model_list')[0]
-        model_object._state().is_new = False
+        model_object._model_state().is_new = False
         return model_object
 
     @classmethod
@@ -418,7 +430,7 @@ class BaseModel(object):
         Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
 
         for model_object in prepare_data.get('model_list'):
-            model_object._state().is_new = False
+            model_object._model_state().is_new = False
 
         return prepare_data.get('model_list')
 
@@ -447,9 +459,10 @@ class BaseModel(object):
         meta_class = cls._meta()
         return meta_class.relations
 
-    class State(object):
+    class ModelState(object):
         _is_new = True
         _errors = {}
+        _with_relation = []
 
         @property
         def is_new(self):
@@ -468,3 +481,10 @@ class BaseModel(object):
         @errors.setter
         def errors(self, errors):
             self._errors = errors
+
+        @property
+        def with_relation(self):
+            return self._with_relation
+
+        def add_with_relation(self, relation):
+            self._with_relation.append(relation)

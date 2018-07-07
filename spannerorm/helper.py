@@ -43,6 +43,46 @@ class Helper(object):
         return isinstance(v, Relation)
 
     @classmethod
+    def get_model_prop_by_name(cls, model_cls, prop_name):
+        """
+        Return model prop by name
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls:
+
+        :type prop_name: str
+        :param prop_name:
+
+        :rtype: property | None
+        :return:
+        """
+        for key, prop in inspect.getmembers(model_cls, Helper.is_property):
+            if key == prop_name:
+                return prop
+
+        return None
+
+    @classmethod
+    def get_model_props_value_by_key(cls, model_obj, prop_name):
+        """
+        Return model props key-value
+
+        :type model_obj: base_model.BaseModel
+        :param model_obj: model
+
+        :type prop_name: str
+        :param prop_name: property name
+
+        :rtype: dict
+        :return:
+        """
+        for key, value in inspect.getmembers(model_obj.__class__, Helper.is_property):
+            if key == prop_name:
+                return model_obj.__getattribute__(key)
+
+        return None
+
+    @classmethod
     def get_model_props(cls, model_cls):
         """
         Return model props

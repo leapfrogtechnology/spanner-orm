@@ -3,6 +3,7 @@ import helper
 import inspect
 import base_model
 from functools import wraps
+from .criteria import Criteria
 
 
 class Relation(object):
@@ -11,6 +12,7 @@ class Relation(object):
         self._reference_module = reference_module
         self._refer_model = Relation.get_refer_model_class(reference_module)
         self._refer_to = refer_to
+        self._with_relation = False
 
     @property
     def join_on(self):
@@ -62,6 +64,11 @@ class Relation(object):
 
         return None
 
+    @classmethod
+    def copy_instance(cls, relation):
+        if relation.relation_type == 'ManyToOne':
+            return ManyToOne(relation.join_on, relation.reference_module, relation.refer_to)
+
     @staticmethod
     def get(func):
         """
@@ -78,17 +85,23 @@ class Relation(object):
         def wrapper(*args, **kwargs):
             model_obj = args[0]
             relation = func(*args, **kwargs)
-            if relation.data is None:
+            if relation is not None and relation.data is None:
                 refer_model = relation.refer_model
                 join_on = relation.join_on
                 refer_to = relation.refer_to
-                join_on_value = Relation.get_prop_value(model_obj, join_on)
+                join_on_value = helper.Helper.get_model_props_value_by_key(model_obj, join_on)
+                refer_model_prop = helper.Helper.get_model_prop_by_name(refer_model, refer_to)
 
+                # if relation.relation_type == 'ManyToOne':
+                #   return ManyToOne.fetch_data(refer_model, refer_model_prop=refer_model_prop,
+                #                               refer_prop_value=join_on_value)
                 # Todo fetch data & set relational data
 
                 return relation.data
-            else:
+            elif relation is not None and relation.data is not None:
                 return relation.data
+            else:
+                return None
 
         return wrapper
 
@@ -154,6 +167,31 @@ class ManyToOne(Relation):
     @data.setter
     def data(self, data):
         self._data = data
+
+    @classmethod
+    def fetch_data(cls, refer_model, refer_model_prop, refer_prop_value):
+        """
+        Fetch ManyToOne relation data
+
+        :type refer_model: base_model.BaseModel
+        :param refer_model: refer model class
+
+        :type refer_model_prop: property
+        :param refer_model_prop: refer model property
+
+        :type refer_prop_value: object
+        :param refer_prop_value: value of refer proper
+
+        :rtype: base_model.BaseModel
+        :return:
+        """
+        criteria = Criteria()
+        if refer_prop_value != None:
+            criteria.add_condition((refer_model_prop, '=', refer_prop_value))
+
+            return refer_model.find(criteria)
+
+        return None
 
 
 class ManyToMany(Relation):

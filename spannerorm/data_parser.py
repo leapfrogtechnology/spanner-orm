@@ -62,18 +62,50 @@ class DataParser(object):
         parse_results = cls.parse_result_set(result_set, select_cols)
         table_name = model_class._meta().db_table
         column_prop_maps = cls.model_column_attr_maps(model_class, table_name)
-
+        column_relation_maps = cls.model_relation_attr_maps(model_class)
         data_list = []
         for result in parse_results:
             model_object = model_class()
-            model_object._state().is_new = False
+            model_object._model_state().is_new = False
             for column_name in column_prop_maps:
                 model_prop = getattr(model_object, column_prop_maps.get(column_name))
                 model_prop.value = result.get(column_name)
 
+            for relation_column_name in column_relation_maps:
+                if result.get(relation_column_name) is not None:
+                    relation_name = column_relation_maps.get(relation_column_name)
+                    relation_attr = model_object.__getattribute__(relation_name)
+                    relation_model = cls.map_relation_model(relation_attr.refer_model, result)
+                    relation_attr.data = relation_model
+                    model_object._model_state().add_with_relation(relation_name[1:])
+
             data_list.append(model_object)
 
         return data_list
+
+    @classmethod
+    def map_relation_model(cls, model_class, result):
+        """
+        Map result to relational model data
+
+        :type model_class: base_model.BaseModel
+        :param model_class: relation model class
+
+        :type result: dict
+        :param result: result set
+
+        :rtype: base_model.BaseModel
+        :return:
+        """
+        table_name = model_class._meta().db_table
+        column_prop_maps = cls.model_column_attr_maps(model_class, table_name)
+        model_object = model_class()
+        model_object._model_state().is_new = False
+        for column_name in column_prop_maps:
+            model_prop = getattr(model_object, column_prop_maps.get(column_name))
+            model_prop.value = result.get(column_name)
+
+        return model_object
 
     @classmethod
     def model_column_attr_maps(cls, model_class, alis=None):
@@ -95,6 +127,26 @@ class DataParser(object):
                 property_column_map[alis + '.' + attr.db_column] = attr_name
 
         return property_column_map
+
+    @classmethod
+    def model_relation_attr_maps(cls, model_class):
+        """
+        Map model props with db columns
+
+        :type model_class: base_model.BaseModel
+        :param model_class:
+
+        :rtype: dict
+        :return: db column mapper to model attrs
+        """
+        relation_attrs = Helper.get_model_relations_attrs(model_class)
+        property_relation_map = {}
+        for attr_name, relation in relation_attrs.items():
+            refer_model = relation.refer_model
+            db_table = refer_model._meta().db_table
+            property_relation_map[db_table + '.' + relation.refer_to] = attr_name
+
+        return property_relation_map
 
     @classmethod
     def parse_raw_data(cls, model_cls, raw_data_list, insert=True):
@@ -137,7 +189,7 @@ class DataParser(object):
             for pk in pk_list:
                 model_object = Helper.init_model_with_default(model_cls)
                 model_object.__setattr__(primary_key_name, pk)
-                model_object._state().is_new = True
+                model_object._model_state().is_new = True
                 model_obj_list.append(model_object)
 
         for model in model_obj_list:
@@ -167,9 +219,7 @@ class DataParser(object):
         columns = []
 
         model_attrs = Helper.get_model_attrs(model_cls)
-        print(model_cls)
         for model_obj in model_obj_list:
-            print(model_obj)
             if model_obj.validate():
                 data_tuple = ()
                 for attr_name in model_attrs:

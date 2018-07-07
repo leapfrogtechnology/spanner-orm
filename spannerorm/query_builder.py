@@ -1,4 +1,5 @@
 import logging
+import base_model
 from datetime import date
 from .helper import Helper
 
@@ -13,6 +14,7 @@ class QueryBuilder:
         self.params_count = 0
         self.params = {}
         self.param_types = {}
+        self.join_with = {}
 
     def _get_select_clause(self):
         """
@@ -21,18 +23,57 @@ class QueryBuilder:
         :rtype: str
         :return:
         """
-        select_clause = ''
-        attrs = Helper.get_model_attrs(self.model_class)
-        table_name = self.meta.db_table
+        select_clause = self._get_model_select_clause(self.model_class)
+        join_select_clause = self._get_join_select_clause()
+        if join_select_clause != '':
+            return select_clause + ', ' + join_select_clause
+
+        return select_clause
+
+    def _get_join_select_clause(self):
+        """
+        Return join select clause
+
+        :rtype: str
+        :return:
+        """
+        join_select_clause = ''
+        join_relations = self.criteria.join_relations
+
+        for join in join_relations:
+            relation = join.get('relation')
+            join_attr = Helper.model_relational_attr_by_prop(self.model_class, relation)
+            if Helper.is_relational_attr(join_attr) is False:
+                raise TypeError('Invalid join with criteria')
+
+            refer_model = join_attr.refer_model
+            if join_select_clause == '':
+                join_select_clause += self._get_model_select_clause(refer_model)
+            else:
+                join_select_clause += ', ' + self._get_model_select_clause(refer_model)
+
+        return join_select_clause
+
+    def _get_model_select_clause(self, model_cls):
+        """
+        Return select clause of model
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls:
+        :return:
+        """
+        sub_select_clause = ''
+        attrs = Helper.get_model_attrs(model_cls)
+        table_name = model_cls._meta().db_table
         for attr in attrs:
             select_column = table_name + '.' + attrs.get(attr).db_column
             self.select_cols.append(select_column)
-            if select_clause == '':
-                select_clause += select_column
+            if sub_select_clause == '':
+                sub_select_clause += select_column
             else:
-                select_clause += ', ' + select_column
+                sub_select_clause += ', ' + select_column
 
-        return select_clause
+        return sub_select_clause
 
     def _get_limit_clause(self):
         """
@@ -179,9 +220,32 @@ class QueryBuilder:
                 order_by_clause += ', ' + table_name + '.' + attr.db_column
 
         if order_by_clause != '':
-            return 'ORDER BY '+order_by_clause + ' ' + order_by.get('order')
+            return 'ORDER BY ' + order_by_clause + ' ' + order_by.get('order')
         else:
             return ''
+
+    def _get_join_clause(self):
+        join_clause = ''
+        join_relations = self.criteria.join_relations
+
+        for join in join_relations:
+            relation = join.get('relation')
+            join_attr = Helper.model_relational_attr_by_prop(self.model_class, relation)
+            if Helper.is_relational_attr(join_attr) is False:
+                raise TypeError('Invalid join with criteria')
+
+            table_name = self.meta.db_table
+            refer_table = join_attr.refer_model._meta().db_table
+            join_on = join_attr.join_on
+            refer_to = join_attr.refer_to
+
+            if join_clause != '':
+                join_clause += ' '
+
+            join_clause += '{} JOIN {} on {}.{}={}.{}' \
+                .format(join.get('join_type'), refer_table, table_name, join_on, refer_table, refer_to)
+
+        return join_clause
 
     def get_query(self):
         """
@@ -190,8 +254,16 @@ class QueryBuilder:
         :rtype: str
         :return: query string
         """
-        select_query = 'SELECT ' + self._get_select_clause() + ' FROM ' + self.table_name + ' AS ' + self.meta.db_table \
-                       + ' ' + self._get_where_clause() + ' ' + self._get_order_by_clause() + ' ' + self._get_limit_clause()
+        select_clause = self._get_select_clause()
+        db_table = self.table_name
+        join_clause = self._get_join_clause()
+        where_clause = self._get_where_clause()
+        order_by_clause = self._get_order_by_clause()
+        limit_clause = self._get_limit_clause()
+
+        select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
+            .format(select_clause=select_clause, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
+                    order_by_clause=order_by_clause, limit_clause=limit_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 
@@ -202,7 +274,12 @@ class QueryBuilder:
         :rtype: str
         :return: query string
         """
-        count_query = 'SELECT COUNT(*) FROM ' + self.table_name + ' AS ' + self.meta.db_table + ' ' + self._get_where_clause()
+        db_table = self.table_name
+        join_clause = self._get_join_clause()
+        where_clause = self._get_where_clause()
+
+        count_query = 'SELECT COUNT(*) FROM {db_table} {join_clause} {where_clause}' \
+            .format(db_table=db_table, join_clause=join_clause, where_clause=where_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', count_query, self.params, self.param_types)
         return count_query
 
@@ -213,8 +290,13 @@ class QueryBuilder:
         :rtype: str
         :return: query string
         """
-        select_primary_key_query = 'SELECT ' + self.meta.primary_key + ' From ' + self.table_name + ' AS ' + self.meta.db_table \
-                                   + ' ' + self._get_where_clause() + ' ' + self._get_limit_clause()
+        primary_key = self.meta.primary_key
+        db_table = self.table_name
+        where_clause = self._get_where_clause()
+        limit_clause = self._get_limit_clause()
+
+        select_primary_key_query = 'SELECT {primary_key} FROM {db_table} {where_clause} {limit_clause}' \
+            .format(primary_key=primary_key, db_table=db_table, where_clause=where_clause, limit_clause=limit_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_primary_key_query, self.params,
                       self.param_types)
         return select_primary_key_query
