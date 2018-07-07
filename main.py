@@ -1,7 +1,7 @@
 #!flask/bin/python
 from flask import Flask, jsonify
 from time import time
-from spannerorm import Connection, Criteria, ModelJSONEncoder
+from spannerorm import Connection, Criteria, ModelJSONEncoder, QueryBuilder
 from datetime import date
 import logging
 from uuid import uuid4
@@ -107,20 +107,16 @@ def update__by_pk():
 
 @app.route('/test')
 def test():
-    user = User()
-    user.role_id = '8921e454-7161-44af-9b8b-1b84f81a22bc'
-    user.password = 12345
-    print('======================')
-    print(user.role_id)
-    print(user.password)
-    user.role = 'sanish'
-    response = user.role
-    print(response)
-    #relations = User.relations()
-    #for name in relations:
-    #    relation = relations.get(name)
-    #    print(relation.reference_model)
-    return 'success'
+    start_time = time()
+
+    criteria = Criteria()
+    criteria.join_with(User.role)
+    criteria.join_with(User.organization)
+    user = User.find(criteria)
+
+    print("--- %s Application Execution time ---" % (time() - start_time))
+    #return 'success'
+    return jsonify(user)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

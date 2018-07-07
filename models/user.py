@@ -26,7 +26,7 @@ class User(BaseModel):
 
     # Relational Fields
     _role = ManyToOne(join_on='role_id', reference_module=role, refer_to='id')
-    _organization = ManyToOne(join_on='_organization_id', reference_module=organization, refer_to='id')
+    _organization = ManyToOne(join_on='organization_id', reference_module=organization, refer_to='id')
 
     @property
     @StringField.get
@@ -178,7 +178,7 @@ class User(BaseModel):
     @organization.setter
     @ManyToOne.set
     def organization(self, data):
-        self._role = data
+        self._organization = data
 
     class Meta:
         db_table = 'users'

@@ -5,9 +5,9 @@ from spannerorm import BaseModel, StringField, BoolField, TimeStampField, OneToM
 
 
 class Organization(BaseModel):
-    # Db column Fields
+    # Db Fields
     _id = StringField(db_column='id', null=False)
-    _organization_name = StringField(db_column='organization_name', null=False)
+    _name = StringField(db_column='name', null=False)
     _sub_domain = StringField(db_column='sub_domain', null=False)
     _logo = StringField(db_column='logo')
     _state = StringField(db_column='state', null=False)
@@ -33,13 +33,13 @@ class Organization(BaseModel):
 
     @property
     @StringField.get
-    def organization_name(self):
-        return self._organization_name
+    def name(self):
+        return self._name
 
-    @organization_name.setter
+    @name.setter
     @StringField.set
-    def organization_name(self, name):
-        self._organization_name = name
+    def name(self, name):
+        self._name = name
 
     @property
     @StringField.get
@@ -92,17 +92,17 @@ class Organization(BaseModel):
         self._is_deleted = is_deleted
 
     @property
-    @TimeStampField.set
+    @TimeStampField.get
     def created_at(self):
         return self._created_at
 
     @created_at.setter
-    @TimeStampField.get
+    @TimeStampField.set
     def created_at(self, created_at):
         self._created_at = created_at
 
     @property
-    @StringField.get
+    @TimeStampField.get
     def created_by(self):
         return self._created_by
 
@@ -127,7 +127,7 @@ class Organization(BaseModel):
         return self._updated_by
 
     @updated_by.setter
-    @TimeStampField.set
+    @StringField.set
     def updated_by(self, updated_by):
         self._updated_by = updated_by
 

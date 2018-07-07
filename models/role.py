@@ -18,60 +18,74 @@ class Role(BaseModel):
     _users = OneToMany(join_on='id', reference_module=user, refer_to='role_id')
 
     @property
+    @StringField.get
     def id(self):
-        return self._id.value
+        return self._id
 
     @id.setter
+    @StringField.set
     def id(self, id):
-        self._id.value = id
+        self._id = id
 
     @property
+    @StringField.get
     def name(self):
-        return self._name.value
+        return self._name
 
     @name.setter
+    @StringField.set
     def name(self, name):
-        self._name.value = name
+        self._name = name
 
     @property
+    @BoolField.get
     def is_deleted(self):
-        return self._is_deleted.value
+        return self._is_deleted
 
     @is_deleted.setter
+    @BoolField.set
     def is_deleted(self, is_deleted):
-        self._is_deleted.value = is_deleted
+        self._is_deleted = is_deleted
 
     @property
+    @TimeStampField.get
     def created_at(self):
-        return self._created_at.value
+        return self._created_at
 
     @created_at.setter
+    @TimeStampField.set
     def created_at(self, created_at):
-        self._created_at.value = created_at
+        self._created_at = created_at
 
     @property
+    @TimeStampField.get
     def created_by(self):
-        return self._created_by.value
+        return self._created_by
 
     @created_by.setter
+    @StringField.set
     def created_by(self, created_by):
-        self._created_by.value = created_by
+        self._created_by = created_by
 
     @property
+    @TimeStampField.get
     def updated_at(self):
-        return self._updated_at.value
+        return self._updated_at
 
     @updated_at.setter
+    @TimeStampField.set
     def updated_at(self, updated_at):
-        self._updated_at.value = updated_at
+        self._updated_at = updated_at
 
     @property
+    @StringField.get
     def updated_by(self):
-        return self._updated_by.value
+        return self._updated_by
 
     @updated_by.setter
+    @StringField.set
     def updated_by(self, updated_by):
-        self._updated_by.value = updated_by
+        self._updated_by = updated_by
 
     @property
     @OneToMany.get
@@ -86,9 +100,6 @@ class Role(BaseModel):
     class Meta:
         db_table = 'roles'
         primary_key = 'id'
-
-        def get_user(self):
-            return user.User
 
         @classmethod
         def generate_pk(cls):
