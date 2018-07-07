@@ -11,8 +11,12 @@ from models import Temp, User
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
 
-Connection.config('develop', 'auth')
+Connection.config('develop', 'auth', '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json')
 
+
+@app.route('/')
+def root():
+    return 'test api'
 
 @app.route('/get')
 def get_records():

@@ -3,7 +3,7 @@ import role
 import organization
 from time import time
 from uuid import uuid4
-from spannerorm import BaseModel, StringField, BoolField, TimeStampField, OneToMany, ManyToOne
+from spannerorm import BaseModel, StringField, BoolField, TimeStampField, ManyToOne
 
 
 class User(BaseModel):
@@ -166,7 +166,7 @@ class User(BaseModel):
         return self._role
 
     @role.setter
-    @OneToMany.set
+    @ManyToOne.set
     def role(self, data):
         self._role = data
 
@@ -176,7 +176,7 @@ class User(BaseModel):
         return self._organization
 
     @organization.setter
-    @OneToMany.set
+    @ManyToOne.set
     def organization(self, data):
         self._role = data
 
