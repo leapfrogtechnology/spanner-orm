@@ -1,2 +1,4 @@
 .idea
 *.pyc
+/venv/
+/service_account.json
