@@ -1,73 +1,77 @@
 import copy
 import helper
-import inspect
 import base_model
 from functools import wraps
 from .criteria import Criteria
 
 
 class Relation(object):
-    def __init__(self, join_on, reference_module, refer_to):
+    def __init__(self, join_on, relation_name, refer_to, relation_type):
         self._join_on = join_on
-        self._reference_module = reference_module
-        self._refer_model = Relation.get_refer_model_class(reference_module)
         self._refer_to = refer_to
         self._with_relation = False
+        self._relation_name = relation_name
+        self._relation_type = relation_type
 
     @property
     def join_on(self):
         return self._join_on
 
     @property
-    def reference_module(self):
-        return self._reference_module
+    def relation_name(self):
+        return self._relation_name
 
     @property
     def refer_to(self):
         return self._refer_to
 
     @property
-    def refer_model(self):
-        return self._refer_model
+    def relation_type(self):
+        return self._relation_type
 
     @classmethod
-    def get_prop_value(cls, obj, prop_name):
+    def get_refer_model(cls, model_obj, relation_name):
+        relations = model_obj._meta().relations()
+        if relation_name not in relations:
+            raise TypeError('Invalid model relation set')
+
+        return relations.get(relation_name)
+
+    def fetch_data(self, model_obj, refer_model):
         """
-        Return object property value
+        Fetch relation data
 
-        :type obj: object
-        :param obj:
+        :type model_obj: base_model.BaseModel
+        :param model_obj: model object
 
-        :type prop_name: str
-        :param prop_name: property name
-
-        :rtype: object
-        :return: value
-        """
-        return obj.__getattribute__(prop_name)
-
-    @classmethod
-    def get_refer_model_class(cls, reference_module):
-        """
-        Return refer model class by reference module
-
-        :type reference_module: module
-        :param reference_module: reference module
-
-        :rtype: base_model.BaseModel
+        :rtype: base_model.BaseModel | list | None
         :return:
         """
-        module_name = reference_module.__name__
-        for name, obj in inspect.getmembers(reference_module):
-            if inspect.isclass(obj) and obj.__module__ == module_name:
-                return obj
+        join_on = self.join_on
+        refer_to = self.refer_to
+        join_on_value = helper.Helper.get_model_props_value_by_key(model_obj, join_on)
+        refer_model_prop = helper.Helper.get_model_prop_by_name(refer_model, refer_to)
 
-        return None
+        if self.relation_type == 'ManyToOne' or self.relation_type == 'OneToOne':
+            criteria = Criteria()
+            if join_on_value is not None:
+                criteria.add_condition((refer_model_prop, '=', join_on_value))
+                return refer_model.find(criteria)
+
+            return None
+        else:
+            return []
 
     @classmethod
     def copy_instance(cls, relation):
         if relation.relation_type == 'ManyToOne':
-            return ManyToOne(relation.join_on, relation.reference_module, relation.refer_to)
+            return ManyToOne(relation.join_on, relation.relation_name, relation.refer_to)
+        elif relation.relation_type == 'OneToOne':
+            return OneToOne(relation.join_on, relation.relation_name, relation.refer_to)
+        elif relation.relation_type == 'ManyToOne':
+            return ManyToOne(relation.join_on, relation.relation_name, relation.refer_to)
+        else:
+            return ManyToMany(relation.join_on, relation.relation_name, relation.refer_to)
 
     @staticmethod
     def get(func):
@@ -85,8 +89,15 @@ class Relation(object):
         def wrapper(*args, **kwargs):
             model_obj = args[0]
             relation = func(*args, **kwargs)
+            print('-------------------------- relational getter -----------------------')
+            if model_obj._model_state().is_new:
+                if relation.relation_type == 'ManyToOne' or relation.relation_type == 'OneToOne':
+                    return None
+                else:
+                    return []
+
             if relation is not None and relation.data is None:
-                refer_model = relation.refer_model
+                refer_model = Relation.get_refer_model(model_obj, relation.relation_name)
                 join_on = relation.join_on
                 refer_to = relation.refer_to
                 join_on_value = helper.Helper.get_model_props_value_by_key(model_obj, join_on)
@@ -96,11 +107,17 @@ class Relation(object):
                 #   return ManyToOne.fetch_data(refer_model, refer_model_prop=refer_model_prop,
                 #                               refer_prop_value=join_on_value)
                 # Todo fetch data & set relational data
-
+                print(type(refer_model))
+                print(join_on)
+                print(refer_to)
+                print(join_on_value)
+                print('-------------------------- relational getter end > 1 -----------------------')
                 return relation.data
             elif relation is not None and relation.data is not None:
+                print('-------------------------- relational getter end > 2 -----------------------')
                 return relation.data
             else:
+                print('-------------------------- relational getter end > 3 -----------------------')
                 return None
 
         return wrapper
@@ -121,25 +138,22 @@ class Relation(object):
         def wrapper(*args, **kwargs):
             model_obj = args[0]
             value = args[1]
-
+            print('-------------------------- relational setter -----------------------')
             model_attr = helper.Helper.model_relational_attr_by_prop_name(model_obj, func.__name__)
             attr = copy.deepcopy(model_attr)
             model_attr.data = value
 
+            print('-------------------------- relational setter end  -----------------------')
             return func(model_obj, attr)
 
         return wrapper
 
 
 class OneToMany(Relation):
-    def __init__(self, join_on, reference_module, refer_to):
-        self._relation_type = 'OneToMany'
+    def __init__(self, join_on, relation_name, refer_to):
         self._data_list = None
-        Relation.__init__(self, join_on=join_on, reference_module=reference_module, refer_to=refer_to)
-
-    @property
-    def relation_type(self):
-        return self._relation_type
+        Relation.__init__(self, join_on=join_on, relation_name=relation_name, refer_to=refer_to,
+                          relation_type='OneToMany')
 
     @property
     def data(self):
@@ -151,14 +165,10 @@ class OneToMany(Relation):
 
 
 class ManyToOne(Relation):
-    def __init__(self, join_on, reference_module, refer_to):
-        self._relation_type = 'ManyToOne'
+    def __init__(self, join_on, relation_name, refer_to):
         self._data = None
-        Relation.__init__(self, join_on=join_on, reference_module=reference_module, refer_to=refer_to)
-
-    @property
-    def relation_type(self):
-        return self._relation_type
+        Relation.__init__(self, join_on=join_on, relation_name=relation_name, refer_to=refer_to,
+                          relation_type='ManyToOne')
 
     @property
     def data(self):
@@ -168,41 +178,29 @@ class ManyToOne(Relation):
     def data(self, data):
         self._data = data
 
-    @classmethod
-    def fetch_data(cls, refer_model, refer_model_prop, refer_prop_value):
-        """
-        Fetch ManyToOne relation data
 
-        :type refer_model: base_model.BaseModel
-        :param refer_model: refer model class
+class OneToOne(Relation):
+    def __init__(self, join_on, relation_name, refer_to):
+        self._relation_type = 'OneToOne'
+        self._data = None
+        Relation.__init__(self, join_on=join_on, relation_name=relation_name, refer_to=refer_to,
+                          relation_type='OneToOne')
 
-        :type refer_model_prop: property
-        :param refer_model_prop: refer model property
+    @property
+    def data(self):
+        return self._data
 
-        :type refer_prop_value: object
-        :param refer_prop_value: value of refer proper
-
-        :rtype: base_model.BaseModel
-        :return:
-        """
-        criteria = Criteria()
-        if refer_prop_value != None:
-            criteria.add_condition((refer_model_prop, '=', refer_prop_value))
-
-            return refer_model.find(criteria)
-
-        return None
+    @data.setter
+    def data(self, data):
+        self._data = data
 
 
 class ManyToMany(Relation):
-    def __init__(self, join_on, reference_module, refer_to):
+    def __init__(self, join_on, relation_name, refer_to):
         self._relation_type = 'ManyToMany'
         self._data_list = None
-        Relation.__init__(self, join_on=join_on, reference_module=reference_module, refer_to=refer_to)
-
-    @property
-    def relation_type(self):
-        return self._relation_type
+        Relation.__init__(self, join_on=join_on, relation_name=relation_name, refer_to=refer_to,
+                          relation_type='ManyToMany')
 
     @property
     def data(self):

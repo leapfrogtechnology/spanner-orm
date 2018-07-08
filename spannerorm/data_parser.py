@@ -3,6 +3,7 @@ import base_model
 from .helper import Helper
 from datetime import datetime
 from .criteria import Criteria
+from .relation import Relation
 from .dataType import TimeStampField
 from google.cloud.spanner_v1.streamed import StreamedResultSet
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
@@ -75,7 +76,8 @@ class DataParser(object):
                 if result.get(relation_column_name) is not None:
                     relation_name = column_relation_maps.get(relation_column_name)
                     relation_attr = model_object.__getattribute__(relation_name)
-                    relation_model = cls.map_relation_model(relation_attr.refer_model, result)
+                    refer_model = Relation.get_refer_model(model_object, relation_attr.relation_name)
+                    relation_model = cls.map_relation_model(refer_model, result)
                     relation_attr.data = relation_model
                     model_object._model_state().add_with_relation(relation_name[1:])
 
@@ -142,9 +144,10 @@ class DataParser(object):
         relation_attrs = Helper.get_model_relations_attrs(model_class)
         property_relation_map = {}
         for attr_name, relation in relation_attrs.items():
-            refer_model = relation.refer_model
-            db_table = refer_model._meta().db_table
-            property_relation_map[db_table + '.' + relation.refer_to] = attr_name
+            refer_model = Relation.get_refer_model(model_class, relation.relation_name)
+            if refer_model is not None:
+                db_table = refer_model._meta().db_table
+                property_relation_map[db_table + '.' + relation.refer_to] = attr_name
 
         return property_relation_map
 
