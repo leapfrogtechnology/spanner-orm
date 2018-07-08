@@ -25,8 +25,8 @@ class User(BaseModel):
     _updated_by = StringField(db_column='updated_by')
 
     # Relational Fields
-    _role = ManyToOne(join_on='role_id', reference_module=role, refer_to='id')
-    _organization = ManyToOne(join_on='organization_id', reference_module=organization, refer_to='id')
+    _role = ManyToOne(join_on='role_id', relation_name='role', refer_to='id')
+    _organization = ManyToOne(join_on='organization_id', relation_name='organization', refer_to='id')
 
     @property
     @StringField.get
@@ -183,6 +183,13 @@ class User(BaseModel):
     class Meta:
         db_table = 'users'
         primary_key = 'id'
+
+        @classmethod
+        def relations(cls):
+            return {
+                'role': role.Role,
+                'organization': organization.Organization
+            }
 
         @classmethod
         def generate_pk(cls):

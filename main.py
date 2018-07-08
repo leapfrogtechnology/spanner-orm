@@ -1,22 +1,24 @@
 #!flask/bin/python
-from flask import Flask, jsonify
+from flask import Flask, jsonify, g, request
 from time import time
-from spannerorm import Connection, Criteria, ModelJSONEncoder, QueryBuilder
+from spannerorm import Connection, Criteria, ModelJSONEncoder
 from datetime import date
 import logging
 from uuid import uuid4
 
-from models import Temp, User
+from models import *
 
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
 
-Connection.config('develop', 'auth', '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json')
+Connection.config('develop', 'auth',
+                  '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json')
 
 
 @app.route('/')
 def root():
     return 'test api'
+
 
 @app.route('/get')
 def get_records():
@@ -63,13 +65,13 @@ def insert_record():
     data_list = [{
         "id": str(uuid4()),
         "is_active": True,
-        "join_date": date(2018,02,20),
+        "join_date": date(2018, 02, 20),
         "name": "Dinesh Thapa",
         "points": 150,
     }, {
         "address": "kalanki, Kathmandu",
         "id": str(uuid4()),
-        "join_date": date(2018,02,20),
+        "join_date": date(2018, 02, 20),
         "name": "Rasna Shakya",
         "points": 200
     }]
@@ -78,6 +80,7 @@ def insert_record():
     print("--- %s Application Execution time ---" % (time() - start_time))
 
     return jsonify(temps)
+
 
 @app.route('/save')
 def save_record():
@@ -90,6 +93,7 @@ def save_record():
     print("--- %s Application Execution time ---" % (time() - start_time))
 
     return jsonify(response)
+
 
 @app.route('/updateByPk')
 def update__by_pk():
@@ -105,18 +109,44 @@ def update__by_pk():
 
     return jsonify(response)
 
+
 @app.route('/test')
 def test():
-    start_time = time()
-
     criteria = Criteria()
     criteria.join_with(User.role)
-    criteria.join_with(User.organization)
+    #criteria.join_with(User.organization)
+    # criteria.add_condition((User.id, '=', '-630652830439006551'))
     user = User.find(criteria)
+    print('------------------ role ------------------')
+    print(user.role)
+    print(user)
 
-    print("--- %s Application Execution time ---" % (time() - start_time))
-    #return 'success'
+    # return 'success'
     return jsonify(user)
+
+
+@app.route('/many')
+def many():
+    criteria = Criteria()
+    criteria.join_with(Role.users)
+    role = Role.find(criteria)
+    return 'success'
+    #return jsonify(role)
+
+
+@app.before_request
+def before_request():
+    logging.debug('Request [{request_method}] : {request_url}'
+                  .format(request_method=request.method, request_url=request.base_url))
+    g.start_time = time()
+
+
+@app.after_request
+def after_request(response):
+    execution_time = time() - g.start_time
+    logging.debug('Request completion time: {execution_time}'.format(execution_time=execution_time))
+    return response
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

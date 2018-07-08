@@ -19,7 +19,7 @@ class Organization(BaseModel):
     _updated_by = StringField(db_column='updated_by')
 
     # Db Relational Field
-    _users = OneToMany(join_on='id', reference_module=user, refer_to='organization_id')
+    _users = OneToMany(join_on='id', relation_name='users', refer_to='organization_id')
 
     @property
     @StringField.get
@@ -144,6 +144,12 @@ class Organization(BaseModel):
     class Meta:
         db_table = 'organizations'
         primary_key = 'id'
+
+        @classmethod
+        def relations(cls):
+            return {
+                'users': user.User
+            }
 
         @classmethod
         def generate_pk(cls):
