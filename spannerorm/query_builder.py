@@ -2,6 +2,7 @@ import logging
 import base_model
 from datetime import date
 from .helper import Helper
+from .relation import Relation
 
 
 class QueryBuilder:
@@ -39,14 +40,13 @@ class QueryBuilder:
         """
         join_select_clause = ''
         join_relations = self.criteria.join_relations
-
         for join in join_relations:
-            relation = join.get('relation')
-            join_attr = Helper.model_relational_attr_by_prop(self.model_class, relation)
+            join_relation = join.get('relation')
+            join_attr = Helper.model_relational_attr_by_prop(self.model_class, join_relation)
             if Helper.is_relational_attr(join_attr) is False:
                 raise TypeError('Invalid join with criteria')
 
-            refer_model = join_attr.refer_model
+            refer_model = Relation.get_refer_model(self.model_class, join_attr.relation_name)
             if join_select_clause == '':
                 join_select_clause += self._get_model_select_clause(refer_model)
             else:
@@ -235,7 +235,8 @@ class QueryBuilder:
                 raise TypeError('Invalid join with criteria')
 
             table_name = self.meta.db_table
-            refer_table = join_attr.refer_model._meta().db_table
+            refer_model = Relation.get_refer_model(self.model_class, join_attr.relation_name)
+            refer_table = refer_model._meta().db_table
             join_on = join_attr.join_on
             refer_to = join_attr.refer_to
 

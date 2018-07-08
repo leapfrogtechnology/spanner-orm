@@ -1,12 +1,12 @@
 import copy
 import inspect
 from .helper import Helper
-from .executor import Executor
 from .criteria import Criteria
+from .executor import Executor
+from .relation import Relation
 from .data_parser import DataParser
 from .query_builder import QueryBuilder
 from .spanner_exception import SpannerException
-from .relation import Relation
 
 
 class BaseModel(object):
@@ -125,6 +125,27 @@ class BaseModel(object):
         :return: {'is_valid':bool, 'error_msg':str}
         """
         return Helper.validate_model_prop(self, prop)
+
+    def fetch_relation(self, prop):
+        """
+        Fetch model relation data by prop
+
+        :type prop: property
+        :param prop: model relation prop
+
+        :rtype: BaseModel | list | None
+        :return: OneToOne & ManyToOne returns BaseModel | None, OneToMany & ManyToMany return list
+        """
+        if isinstance(prop, property) is False:
+            raise TypeError('Fetch relation should be model property')
+
+        relation_attrs = Helper.get_model_relations_attrs(self)
+        attr_name = '_' + prop.fget.__name__
+        if relation_attrs.has_key(attr_name) is False:
+            raise TypeError('Fetch relation prop dataType should be [OntToOne | ManyToOne | OneToMany | ManyToMany]')
+
+        relation_attr = relation_attrs[attr_name]
+        return relation_attr.fetch_data(self)
 
     @classmethod
     def _meta(cls):

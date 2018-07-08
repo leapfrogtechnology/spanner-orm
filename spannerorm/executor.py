@@ -1,8 +1,9 @@
+import logging
+from time import time
 from .connection import Connection
 from google.cloud.spanner import KeySet
 from google.cloud.spanner_v1.transaction import Transaction
 from google.cloud.spanner_v1.streamed import StreamedResultSet
-
 
 class Executor:
     @classmethod
@@ -29,7 +30,10 @@ class Executor:
         :return: result set
         """
         with Connection.get_instance().snapshot() as snapshot:
-            return snapshot.execute_sql(query_string, transaction, params, param_types)
+            start_time = time()
+            response = snapshot.execute_sql(query_string, transaction, params, param_types)
+            logging.debug('Query completion Time: %s', (time() - start_time))
+            return response
 
     @classmethod
     def insert_data(cls, table_name, columns, values, transaction=None):
@@ -57,7 +61,9 @@ class Executor:
             db_instance = transaction
 
         with db_instance.batch() as batch:
+            start_time = time()
             batch.insert(table=table_name, columns=columns, values=values)
+            logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def update_data(cls, table_name, columns, values, transaction=None):
@@ -85,7 +91,9 @@ class Executor:
             db_instance = transaction
 
         with db_instance.batch() as batch:
+            start_time = time()
             batch.update(table=table_name, columns=columns, values=values)
+            logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def save_data(cls, table_name, columns, values, transaction=None):
@@ -112,7 +120,9 @@ class Executor:
             db_instance = transaction
 
         with db_instance.batch() as batch:
+            start_time = time()
             batch.insert_or_update(table=table_name, columns=columns, values=values)
+            logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def delete_data(cls, table_name, id_list, transaction=None):
@@ -136,4 +146,6 @@ class Executor:
 
         key_set = KeySet(keys=id_list, all_=False)
         with db_instance.batch() as batch:
+            start_time = time()
             batch.delete(table_name, key_set)
+            logging.debug('Query completion Time: %s', (time() - start_time))
