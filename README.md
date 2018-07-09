@@ -18,9 +18,18 @@ product:
 
 ## Table of contents
 <!--ts-->
-   * [Installation](#installation)
-   * [Connection](#connection)
-   * [BaseModel and DataType](#basemodel-and-datatype)
+* [Installation](#installation)
+* [Connection](#connection)
+* [BaseModel and DataType](#basemodel-and-datatype)
+    * [DataType](#datatype)
+    * [DataType Field arguments](#datatype-field-argumentsa)
+    * [Relation](#relation)
+    * [Meta](#meta)
+    * [Model Decorator](#model-decorator)
+* [Query Records](#query-records)
+    * [find(criteria)](#find(criteria))
+    * [find_by_pk(pk, criteria)](#find_by_pk(pk,-criteria))
+    * [find_all(criteria)](#find_all(criteria))
 <!--te-->
 
 ## Installation
@@ -397,3 +406,112 @@ Model-specific configuration is placed in a special class called `Meta`. Meta Cl
 | @ManyToMany.get         | ManyToMany relation getter, should use with `property` decorator        |
 | @ManyToMany.set         | ManyToMany relation setter, should use with `setter`  decorator         |
 
+## Query Records
+Model query records public methods
+
+#### find(criteria)
+Fetch single record data filter by criteria
+```
+- params:
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+- return:
+    - If exist return Model object else None
+    - Type: Model object | None
+```
+
+eg: With out join
+```python
+criteria = Criteria()
+criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '4707145032222247178')])
+user = User.find(criteria)
+```
+
+eg: With join
+```python
+criteria = Criteria()
+criteria.join_with(User.role)
+user = User.find()
+user_role = user.role
+```
+#### find_by_pk(pk, criteria)
+Fetch record by primary key filter by criteria
+```
+- params:
+    - pk:
+        - Primary Key value
+        - Type: str | int (depending on primary key data type)
+        - Required
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+- return:
+    - If exist return Model object else None
+    - Type: Model object | None
+```
+
+eg:
+```python
+criteria = Criteria()
+criteria.add_condition((User.is_deleted, '=', False))
+user = User.find_by_pk('-300113230644022007', criteria)
+```
+
+#### find_all(criteria)
+Fetch records filter by criteria
+```
+- params:
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+- return:
+    - list of model
+    -Type: list
+```
+
+eg: With out join
+```python
+criteria = Criteria()
+criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
+criteria.add_condition((User.role_id, 'IN', ['1', '2']))
+criteria.add_condition((User.organization_id, 'NOT IN', ['4707145032222247178']))
+criteria.set_order_by(User.email, 'ASC')
+criteria.limit = 2
+
+users = User.find_all(criteria)
+```
+
+eg: With ManyToOne Join
+```python
+criteria = Criteria()
+criteria.join_with(User.role)
+criteria.join_with(User.organization)
+criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
+criteria.set_order_by(User.email, 'ASC')
+criteria.limit = 2
+
+users = User.find_all(criteria)
+
+for user in users:
+    print(user.role)
+```
+
+eg: With OneToMany Join
+```python
+criteria = Criteria()
+criteria.join_with(Role.users)
+criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
+criteria.set_order_by(User.email, order='DESC')
+role = Role.find(criteria)
+users = role.users
+
+for user in users:
+    print(user)
+```

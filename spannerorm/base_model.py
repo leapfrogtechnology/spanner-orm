@@ -335,13 +335,13 @@ class BaseModel(object):
     @classmethod
     def find(cls, criteria=None):
         """
-        get single record data
+        Fetch single record data filter by criteria
 
         :type criteria: Criteria
         :param criteria:
 
         :rtype: BaseModel
-        :return: If exist return Model & None
+        :return: If exist return Model else None
         """
         if criteria is None:
             criteria = Criteria()
@@ -357,17 +357,22 @@ class BaseModel(object):
             return None
 
     @classmethod
-    def find_by_pk(cls, pk):
+    def find_by_pk(cls, pk, criteria=None):
         """
-        Find record by primary key
+        Fetch record by primary key filter by criteria
 
         :type pk: object
         :param pk: primary key
 
+        :type criteria: Criteria
+        :param criteria:
+
         :rtype: BaseModel
-        :return: If exist return Model & None
+        :return: If exist return Model else None
         """
-        criteria = Criteria()
+        if criteria is None:
+            criteria = Criteria()
+
         criteria.limit = 1
         criteria.add_condition((cls.primary_key_property(), '=', pk))
 
@@ -383,7 +388,7 @@ class BaseModel(object):
     @classmethod
     def find_all(cls, criteria=None):
         """
-        Get records by criteria
+        Fetch records filter by criteria
 
         :type criteria: Criteria
         :param criteria: select criteria
