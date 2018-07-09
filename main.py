@@ -10,6 +10,7 @@ from models import *
 
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
+logging.basicConfig(level=logging.DEBUG)
 
 service_account_json = '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json'
 Connection.config('develop', 'auth', service_account_json)
@@ -127,7 +128,7 @@ def test():
 def many():
     criteria = Criteria()
     criteria.join_with(Role.users)
-    criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
+    #criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
     #criteria.set_order_by(User.email, order='DESC')
     role = Role.find(criteria)
     #return 'success'
@@ -149,6 +150,4 @@ def after_request(response):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    logging.error('This message should go to the log file')
     app.run(host='0.0.0.0', port=8282, debug=True)
