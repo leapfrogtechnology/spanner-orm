@@ -12,6 +12,9 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/leapfrogtechnology/spanner-orm",
+    install_requires=[
+        'flask',
+    ],
     packages=setuptools.find_packages(),
     classifiers=(
         "Programming Language :: Python :: 2.7",
