@@ -1,5 +1,6 @@
 import re
 import inspect
+import importlib
 import base_model
 from .dataType import *
 from datetime import date
@@ -517,6 +518,31 @@ class Helper(object):
         return props_details
 
     @classmethod
+    def get_relation_props_details(cls, model_cls):
+        """
+        Return model relation props details
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls:
+
+        :rtype: dict
+        :return:
+        """
+        model_props = Helper.get_model_props(model_cls)
+        model_relation_attrs = Helper.get_model_relations_attrs(model_cls)
+
+        props_details = {}
+        for prop_name in model_props:
+            model_attr_name = '_' + prop_name
+            if model_relation_attrs.has_key(model_attr_name):
+                attr = model_relation_attrs.get(model_attr_name)
+                props_details.update({
+                    prop_name: Helper.get_relation_pop_detail(attr)
+                })
+
+        return props_details
+
+    @classmethod
     def get_prop_details(cls, attr):
         """
         Return model attr field details
@@ -529,33 +555,70 @@ class Helper(object):
         """
         details = {
             'db_column': attr.db_column,
-            'data_type': attr.data_type,
             'null': attr.null,
             'default_value': attr.default
         }
 
         if isinstance(attr, IntegerField):
             details.update({
+                'data_type': 'IntegerField',
                 'max_value': attr.max_value,
                 'min_value': attr.min_value
             })
         if isinstance(attr, FloatField):
             details.update({
+                'data_type': 'FloatField',
                 'max_value': attr.max_value,
                 'min_value': attr.min_value,
                 'decimal_places': attr.decimal_places
             })
         if isinstance(attr, StringField):
             details.update({
+                'data_type': 'StringField',
                 'max_length': attr.max_length,
                 'reg_exr': attr.reg_exr
             })
         if isinstance(attr, EnumField):
             details.update({
+                'data_type': 'EnumField',
                 'enum_list': attr.enum_list
+            })
+        if isinstance(attr, DateField):
+            details.update({
+                'data_type': 'DateField'
+            })
+        if isinstance(attr, TimeStampField):
+            details.update({
+                'data_type': 'TimeStampField'
+            })
+        if isinstance(attr, BoolField):
+            details.update({
+                'data_type': 'BoolField'
+            })
+        if isinstance(attr, BytesField):
+            details.update({
+                'data_type': 'BytesField'
             })
 
         return details
+
+    @classmethod
+    def get_relation_pop_detail(cls, attr):
+        """
+        Return model relation attr field details
+
+        :type attr: Relation
+        :param attr:
+
+        :rtype: dict
+        :return:
+        """
+        return {
+            'relation_type': attr.relation_type,
+            'relation_name': attr.relation_name,
+            'join_on': attr.join_on,
+            'refer_to': attr.refer_to
+        }
 
     @classmethod
     def init_model_with_default(cls, model_class):
@@ -576,3 +639,21 @@ class Helper(object):
                 attr.value = attr.default
 
         return model_object
+
+    @classmethod
+    def model_cls_by_module_name(cls, prop_module_name):
+        """
+        import module by name & return model
+
+        :type prop_module_name: str
+        :param prop_module_name:
+
+        :rtype: base_model.BaseModel
+        :return:
+        """
+        prop_module = importlib.import_module(prop_module_name)
+        for name, model in inspect.getmembers(prop_module):
+            if inspect.isclass(model) and prop_module_name == model.__module__:
+                return model
+
+        return None

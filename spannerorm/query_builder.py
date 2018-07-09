@@ -16,6 +16,7 @@ class QueryBuilder:
         self.params = {}
         self.param_types = {}
         self.join_with = {}
+        self.multijoin_queries = {}
 
     def _get_select_clause(self):
         """
@@ -47,10 +48,15 @@ class QueryBuilder:
                 raise TypeError('Invalid join with criteria')
 
             refer_model = Relation.get_refer_model(self.model_class, join_attr.relation_name)
-            if join_select_clause == '':
-                join_select_clause += self._get_model_select_clause(refer_model)
+
+            if join_attr.relation_type == 'OneToOne' or join_attr.relation_type == 'ManyToOne':
+                if join_select_clause == '':
+                    join_select_clause += self._get_model_select_clause(refer_model)
+                else:
+                    join_select_clause += ', ' + self._get_model_select_clause(refer_model)
             else:
-                join_select_clause += ', ' + self._get_model_select_clause(refer_model)
+                # Todo handle OneToMany & ManyToMany
+                self._set_multijoin_select_clause(refer_model, join_attr.relation_name)
 
         return join_select_clause
 
@@ -105,7 +111,6 @@ class QueryBuilder:
         :return:
         """
         where_clause = ''
-        table_name = self.meta.db_table
 
         for condition in condition_list:
             if isinstance(condition, dict):
@@ -114,11 +119,14 @@ class QueryBuilder:
                     where_clause += '(' + self._build_where_clause(condition) + ')'
             else:
                 self.params_count += 1
-                attr = Helper.model_attr_by_prop(self.model_class, condition[0])
-
+                prop = condition[0]
+                prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
+                attr = Helper.model_attr_by_prop(prop_module_cls, prop)
+                table_name = prop_module_cls._meta().db_table
                 db_field = table_name + '.' + attr.db_column
                 operator = condition[1]
                 param = 'param' + str(self.params_count)
+
                 if where_clause != '':
                     where_clause += ' AND '
 
@@ -209,11 +217,13 @@ class QueryBuilder:
         :return: order clause
         """
         order_by = self.criteria.order_by
-        table_name = self.meta.db_table
         order_by_clause = ''
 
         for prop in order_by.get('order_col'):
-            attr = Helper.model_attr_by_prop(self.model_class, prop)
+            prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
+            table_name = prop_module_cls._meta().db_table
+            attr = Helper.model_attr_by_prop(prop_module_cls, prop)
+
             if order_by_clause == '':
                 order_by_clause += table_name + '.' + attr.db_column
             else:
@@ -248,6 +258,63 @@ class QueryBuilder:
 
         return join_clause
 
+    def _set_multijoin_select_clause(self, model_cls, relation_name):
+        """
+        set OnToMany or ManyToMany Join select clause
+
+        :type model_cls: base_model.BaseModel
+        :param model_cls: refer to model class
+
+        :type relation_name: str
+        :param relation_name: relation name
+        """
+        sub_select_clause = ''
+        attrs = Helper.get_model_attrs(model_cls)
+        table_name = model_cls._meta().db_table
+
+        select_cols = []
+        for attr in attrs:
+            select_column = table_name + '.' + attrs.get(attr).db_column
+            select_cols.append(select_column)
+            if sub_select_clause == '':
+                sub_select_clause += select_column
+            else:
+                sub_select_clause += ', ' + select_column
+
+        if self.multijoin_queries.has_key(relation_name) is False:
+            self.multijoin_queries[relation_name] = {}
+
+        multijoin_query = self.multijoin_queries.get(relation_name)
+        multijoin_query['select_cols'] = select_cols
+        multijoin_query['select_clause'] = sub_select_clause
+
+    def _set_multijoin_query_data(self, relation_name, db_table, join_clause, where_clause):
+        """
+        Set join sub query data
+
+        :type relation_name: str
+        :param relation_name: Relation name
+
+        :type db_table: str
+        :param db_table: db table name
+
+        :type join_clause: str
+        :param join_clause: join clause
+
+        :type where_clause: str
+        :param where_clause: where clause
+        """
+        relations = self.model_class._meta().relations()
+        refer_to_model = relations.get(relation_name)
+        relation_prop = Helper.get_model_prop_by_name(self.model_class, relation_name)
+
+        if self.multijoin_queries.has_key(relation_name) is False:
+            self.multijoin_queries[relation_name] = {}
+
+        multijoin_query = self.multijoin_queries.get(relation_name)
+        multijoin_query['refer_to_model'] = refer_to_model
+        multijoin_query['relation_prop'] = relation_prop
+
     def get_query(self):
         """
         Build query base on criteria and return query string
@@ -262,9 +329,37 @@ class QueryBuilder:
         order_by_clause = self._get_order_by_clause()
         limit_clause = self._get_limit_clause()
 
+        for relation_name in self.multijoin_queries:
+            self._set_multijoin_query_data(relation_name, db_table, join_clause, where_clause)
+
         select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
             .format(select_clause=select_clause, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
                     order_by_clause=order_by_clause, limit_clause=limit_clause)
+        logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
+        return select_query
+
+    def get_multijoin_query(self, relation_name, in_values):
+        multijoin_query = self.multijoin_queries.get(relation_name)
+        relation_prop = multijoin_query.get('relation_prop')
+        relation_attr = Helper.model_relational_attr_by_prop(self.model_class, relation_prop)
+        refer_to_model = multijoin_query.get('refer_to_model')
+        refer_to_attr = Helper.model_attr_by_prop_name(refer_to_model, relation_attr.refer_to)
+        refer_table_name = refer_to_model._meta().db_table
+        refer_db_field = refer_table_name + '.' + refer_to_attr.db_column
+        db_table = self.table_name
+        where_clause = self._get_where_clause()
+        join_clause = self._get_join_clause()
+
+        if where_clause != '':
+            where_clause += ' AND {db_field} IN {in_clause}' \
+                .format(db_field=refer_db_field, in_clause=self._build_in_clause(in_values))
+        else:
+            where_clause = 'WHERE {db_field} IN {in_clause}' \
+                .format(db_field=refer_db_field, in_clause=self._build_in_clause(in_values))
+
+        select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause}' \
+            .format(select_clause=multijoin_query.get('select_clause'), db_table=db_table,
+                    join_clause=join_clause, where_clause=where_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 

@@ -40,9 +40,14 @@ class BaseModel(object):
 
         return model_props
 
-    @classmethod
-    def get_instance(cls):
-        return cls()
+    def _model_state(self):
+        """
+        Return model object states
+
+        :rtype: BaseModel.State
+        :return:
+        """
+        return self.__state__
 
     def equals(self, obj):
         """
@@ -58,15 +63,6 @@ class BaseModel(object):
             return False
 
         return Helper.get_model_props_key_value(self) == Helper.get_model_props_key_value(obj)
-
-    def _model_state(self):
-        """
-        Return model object states
-
-        :rtype: BaseModel.State
-        :return:
-        """
-        return self.__state__
 
     def is_new_record(self):
         """
@@ -126,27 +122,6 @@ class BaseModel(object):
         """
         return Helper.validate_model_prop(self, prop)
 
-    def fetch_relation(self, prop):
-        """
-        Fetch model relation data by prop
-
-        :type prop: property
-        :param prop: model relation prop
-
-        :rtype: BaseModel | list | None
-        :return: OneToOne & ManyToOne returns BaseModel | None, OneToMany & ManyToMany return list
-        """
-        if isinstance(prop, property) is False:
-            raise TypeError('Fetch relation should be model property')
-
-        relation_attrs = Helper.get_model_relations_attrs(self)
-        attr_name = '_' + prop.fget.__name__
-        if relation_attrs.has_key(attr_name) is False:
-            raise TypeError('Fetch relation prop dataType should be [OntToOne | ManyToOne | OneToMany | ManyToMany]')
-
-        relation_attr = relation_attrs[attr_name]
-        return relation_attr.fetch_data(self)
-
     @classmethod
     def _meta(cls):
         return cls.__dict__.get('Meta')
@@ -163,10 +138,40 @@ class BaseModel(object):
         :param query_builder:
 
         :rtype: list
-        :return:
+        :return: model list of result set
         """
         results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
-        return DataParser.map_model(results, query_builder.select_cols, cls)
+        result_sets = DataParser.map_model(results, query_builder.select_cols, cls)
+        cls._fetch_multi_join_query(query_builder, result_sets)
+
+        return result_sets
+
+    @classmethod
+    def _fetch_multi_join_query(cls, query_builder, result_sets):
+        """
+        Fetch data of multi join relation (OneToMany, ManyToMany) query
+
+        :type query_builder: QueryBuilder
+        :param query_builder:
+
+        :type result_sets: list
+        :param result_sets: model list result set
+        """
+        for relation_name in query_builder.multijoin_queries:
+            multijoin_query = query_builder.multijoin_queries.get(relation_name)
+            relation_prop = multijoin_query.get('relation_prop')
+            relation_attr = Helper.model_relational_attr_by_prop(cls, relation_prop)
+            refer_to_model = multijoin_query.get('refer_to_model')
+
+            join_on_values = []
+            for row in result_sets:
+                join_on_values.append(getattr(row, relation_attr.join_on))
+
+            query_string = query_builder.get_multijoin_query(relation_name, join_on_values)
+            join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+            join_result_sets = DataParser.map_model(join_results, multijoin_query.get('select_cols'), refer_to_model)
+
+            DataParser.map_multi_join_model(result_sets, join_result_sets, relation_name, relation_attr.join_on, relation_attr.refer_to)
 
     @classmethod
     def _fetch_primary_keys(cls, criteria):
@@ -202,7 +207,8 @@ class BaseModel(object):
         meta_data = {
             'db_table': class_meta.db_table,
             'primary_key': class_meta.primary_key,
-            'properties': Helper.get_model_props_details(cls)
+            'properties': Helper.get_model_props_details(cls),
+            'relations' : Helper.get_relation_props_details(cls)
         }
 
         return meta_data
@@ -477,6 +483,12 @@ class BaseModel(object):
 
     @classmethod
     def relations(cls):
+        """
+        Return model relations
+
+        :rtype: dict
+        :return:
+        """
         meta_class = cls._meta()
         return meta_class.relations
 
