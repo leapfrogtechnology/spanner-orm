@@ -11,14 +11,16 @@ from models import *
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
 
-Connection.config('develop', 'auth',
-                  '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json')
-
+service_account_json = '/home/leapfrog/personal-data/python-work/opensource/spanner-orm/service_account.json'
+Connection.config('develop', 'auth', service_account_json)
 
 @app.route('/')
 def root():
     return 'test api'
 
+@app.route('/meta')
+def get_meta_data():
+    return jsonify(User.get_meta_data())
 
 @app.route('/get')
 def get_records():
@@ -117,11 +119,7 @@ def test():
     #criteria.join_with(User.organization)
     # criteria.add_condition((User.id, '=', '-630652830439006551'))
     user = User.find(criteria)
-    print('------------------ role ------------------')
-    print(user.role)
-    print(user)
 
-    # return 'success'
     return jsonify(user)
 
 
@@ -129,9 +127,11 @@ def test():
 def many():
     criteria = Criteria()
     criteria.join_with(Role.users)
+    criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
+    #criteria.set_order_by(User.email, order='DESC')
     role = Role.find(criteria)
-    return 'success'
-    #return jsonify(role)
+    #return 'success'
+    return jsonify(role)
 
 
 @app.before_request
