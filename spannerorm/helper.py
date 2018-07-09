@@ -312,7 +312,7 @@ class Helper(object):
             error_msg = 'Property value should not be None'
 
         if value is not None:
-            if isinstance(value, int) is False:
+            if isinstance(value, int) is False and isinstance(value, float) is False:
                 is_valid = False
                 error_msg = 'Data type should be <int>'
 
