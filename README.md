@@ -16,16 +16,13 @@ product:
 - python 2.7+ (Not tested yet in python 3+)
 - Connection pooling
 
-Table of contents
-=================
-
+### Table of contents
 <!--ts-->
-   * [Installation](#Installation)
-   * [Connection](#Connection)
+   * [Installation](#installation)
+   * [Connection](#connection)
 <!--te-->
 
-Installation
-------------
+#### Installation
 - Install pip (If not install in your system)
 ```bash
 sudo apt-get install python-pip
@@ -44,8 +41,7 @@ sudo apt-get install python-pip
     - Go to the `GCP Console` > `Service accounts`
     - Download key from service account list by clicking at `action`  > `create key`
 
-Connection
-----------
+#### Connection
 The spannerorm Connection object represents a connection to a database. The Connection class is instantiated with all 
 the information needed to open a connection to a database, and then can be used.
 
