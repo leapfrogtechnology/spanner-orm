@@ -110,6 +110,39 @@ class DataParser(object):
         return model_object
 
     @classmethod
+    def map_multi_join_model(cls, model_list, join_model_list, relation_prop_name, join_on, refer_to):
+        """
+        Map model list with list of relational model list with respect of join_on & refer_to property
+
+        :type model_list: list
+        :param model_list:
+
+        :type join_model_list: list
+        :param join_model_list:
+
+        :type relation_prop_name: str
+        :param relation_prop_name: relation property name
+
+        :type join_on: str
+        :param join_on:
+
+        :type refer_to: str
+        :param refer_to:
+        """
+        for model in model_list:
+            join_data = []
+            join_on_prop_value = getattr(model, join_on)
+            for join_model in join_model_list:
+                print(join_model)
+                refer_to_prop_value = getattr(join_model, refer_to)
+                print(refer_to_prop_value)
+                if refer_to_prop_value == join_on_prop_value:
+                    join_data.append(join_model)
+
+            model._model_state().add_with_relation(relation_prop_name)
+            setattr(model, relation_prop_name, join_data)
+
+    @classmethod
     def model_column_attr_maps(cls, model_class, alis=None):
         """
         Map model props with db columns
