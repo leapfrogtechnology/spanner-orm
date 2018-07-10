@@ -22,14 +22,14 @@ product:
 * [Connection](#connection)
 * [BaseModel and DataType](#basemodel-and-datatype)
     * [DataType](#datatype)
-    * [DataType Field arguments](#datatype-field-argumentsa)
+    * [DataType Field arguments](#datatype-field-arguments)
     * [Relation](#relation)
     * [Meta](#meta)
     * [Model Decorator](#model-decorator)
 * [Query Records](#query-records)
-    * [find(criteria)](#find(criteria))
-    * [find_by_pk(pk, criteria)](#find_by_pk(pk,-criteria))
-    * [find_all(criteria)](#find_all(criteria))
+    * [find(criteria)](#findcriteria)
+    * [find_by_pk(pk, criteria)](#find_by_pkpk-criteria)
+    * [find_all(criteria)](#find_allcriteria)
 <!--te-->
 
 ## Installation
@@ -411,7 +411,7 @@ Model query records public methods
 
 #### find(criteria)
 Fetch single record data filter by criteria
-```
+```markdown
 - params:
     - criteria:
         - Filter criteria
@@ -439,7 +439,7 @@ user_role = user.role
 ```
 #### find_by_pk(pk, criteria)
 Fetch record by primary key filter by criteria
-```
+```markdown
 - params:
     - pk:
         - Primary Key value
@@ -464,7 +464,7 @@ user = User.find_by_pk('-300113230644022007', criteria)
 
 #### find_all(criteria)
 Fetch records filter by criteria
-```
+```markdown
 - params:
     - criteria:
         - Filter criteria
@@ -515,3 +515,104 @@ users = role.users
 for user in users:
     print(user)
 ```
+
+### Criteria
+`Criteria` object represents a query filter criteria, such as conditions, ordering by, limit/offset. 
+
+#### Criteria.condition(conditions, operator)
+Set criteria condition that filter result set
+```markdown
+- params:
+    - conditions:
+        - List of conditions
+        - Type: list
+        - Required
+    - operator:
+        - Sql operator
+        - Type: str
+        - Default: AND
+        - Allow values: [AND | OR]
+        - Optional
+```
+
+eg: `WHERE users.email LIKe '%@lftechnology.com'`
+```python
+criteria = Criteria()
+criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
+```
+
+eg: `WHERE users.email LIKe '%@lftechnology.com' OR users.role_id IN ('1', '2')`
+```python
+criteria = Criteria()
+criteria.condition([(User.email, 'LIKE', '%@lftechnology.com'), (User.role_id, 'IN', ['1', '2'])], 'OR')
+```
+
+eg: `WHERE user.name LIKE '%lf%' AND (users.active=true OR users.is_deleted=false)`
+```python
+criteria = Criteria()
+criteria.condition([((User.name, 'LIKE', '%lf%'), 'AND', ((User.active, '=', True), 'OR', (User.is_deleted, '=', False)))])
+```
+
+eg: `WHERE (((users.name LIKE '%lf%') AND (users.active=true OR users.is_deleted=false)) OR (users.user_name='mjsanish' AND users.password='pass')) OR (users.role_id IN (1, 3))`
+```python
+criteria = Criteria()
+criteria.condition([(((User.name, 'LIKE', '%lf%'), 'AND', ((User.active, '=', True), 'OR', (User.is_deleted, '=', False))), 'OR', ((User.user_name, '=', 'mjsanish'), 'AND', (User.password, '=', 'pass'))), (User.role_id, 'IN', [1, 3])], 'OR')
+
+```
+
+#### add_condition(condition, operator)
+Add criteria condition that filter result set
+```markdown
+- params:
+    - condition:
+        - Filter condition
+        - Type: tuple
+        - Required
+    - operator:
+        - Condition operator
+        - Type: str
+        - Default: AND
+        - Allow values: [AND | OR]
+        - Optional
+```
+
+eg: `WHERE users.email LIKe '%@lftechnology.com'`
+```python
+criteria = Criteria()
+criteria.add_condition([(User.email, 'LIKE', '%@lftechnology.com')])
+```
+
+eg: `WHERE users.email LIKe '%@lftechnology.com' OR users.role_id IN ('1', '2')`
+```python
+criteria = Criteria()
+criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
+criteria.add_condition((User.role_id, 'IN', ['1', '2']), 'OR')
+```
+
+eg:
+eg: `WHERE user.name LIKE '%lf%' AND (users.active=false OR users.is_deleted=true)`
+```python
+criteria = Criteria()
+criteria.add_condition((User.name, 'LIKE', '%lf%'))
+criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', True)))
+```
+
+#### Criteria Condition Operators
+
+| Operator  | Description                            |  Example                                                          |
+| --------- | ---------------------------------------| ----------------------------------------------------------------- |
+| =        | Equal                                   | (User.name, '=', 'sanish')                                        |
+| >        | Greater Than                            | (User.points, '>', 100)                                           |
+| <        | Less Than                               | (User.points, '<', 2000)                                          |
+| >=       | Greater Than Or Equal                   | (User.points, '>=', 100)                                          |
+| <=       | Less Than Or Equal                      | (User.points, '<=', 1000)                                         |
+| <>       | Not Equal                               | (User.name, '<>', 'sanish')                                       |
+| LIKE     | Search for a pattern                    | (User.name, 'LIKE', '%sa%')                                       |
+| IN       | Search for `In` Multiple values         | (User.role_id, 'IN', ['1', '2'])                                  |
+| NOT IN   | Search for `Not In` Multiple values     | (Task.status, 'NOT IN', ['pending', 'under review'])              |
+| AND      | Join two condition with `AND` operator  | (User.name, 'LIKE', '%sa%') , 'AND', (User.is_deleted, '=', False)|
+| OR       | Join two condition with `OR` operator   | (User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False) |
+
+
+
+
