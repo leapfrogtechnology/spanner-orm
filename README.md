@@ -823,3 +823,55 @@ Update by primary key of model to database
     - model object
 ```
 
+## Delete Records
+Model delete function allow delete records from database
+
+### delete_one(criteria)
+Delete single record that match with criteria
+
+```markdown
+- params:
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+- return: True on success else throw exception
+```
+
+### delete_by_pk(pk)
+Delete record by primary key
+```markdown
+- params:
+    - pk:
+        - Primary key value
+        - Type: int | str (base on primary key type)
+        - Require
+- return: True on success else throw exception
+```
+
+### delete_all(criteria)
+Delete all records that match with criteria
+```markdown
+- params:
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+- return: True on success else throw exception
+```
+
+## Model object functions
+### equals(obj)
+### is_new_record()
+### get_pk_value()
+### get_errors()
+### validate()
+### validate_property(prop)
+
+
+## Model class functions
+### get_meta_data()
+### primary_key_property()
+### has_property(property_name)
