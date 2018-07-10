@@ -2,7 +2,10 @@ from time import time
 from uuid import uuid4
 from spannerorm import BaseModel, IntegerField, StringField, BoolField, TimeStampField, DateField
 
-
+# initialize with default value
+# model pass data
+# none criteria
+# on update/save retrive updated data
 class Temp(BaseModel):
     # Db Fields
     _id = StringField(db_column='id', null=False)
@@ -92,4 +95,5 @@ class Temp(BaseModel):
 
         @classmethod
         def generate_pk(cls):
+            print('--------- temp')
             return uuid4()

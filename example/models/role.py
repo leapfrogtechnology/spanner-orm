@@ -109,4 +109,4 @@ class Role(BaseModel):
 
         @classmethod
         def generate_pk(cls):
-            return uuid4()
+            return str(uuid4())
