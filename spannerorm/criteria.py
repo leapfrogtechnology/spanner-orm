@@ -68,7 +68,7 @@ class Criteria(object):
 
     def condition(self, conditions, operator='AND'):
         """
-        Set criteria condition
+        Set criteria condition that filter result set
 
         :type conditions: list
         :param conditions: list of conditions
@@ -84,7 +84,7 @@ class Criteria(object):
 
     def add_condition(self, condition, operator='AND'):
         """
-        add where criteria
+        Add criteria condition that filter result set
 
         :type condition: tuple
         :param condition: where condition like:
