@@ -441,6 +441,7 @@ class BaseModel(object):
         :return: model object
         """
         prepare_data = DataParser.build_model_data(cls, [model_obj])
+        print(prepare_data)
         Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
 
         model_object = prepare_data.get('model_list')[0]

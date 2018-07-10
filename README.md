@@ -519,7 +519,7 @@ for user in users:
 ### Criteria
 `Criteria` object represents a query filter criteria, such as conditions, ordering by, limit/offset. 
 
-#### Criteria.condition(conditions, operator)
+#### criteria.condition(conditions, operator)
 Set criteria condition that filter result set
 ```markdown
 - params:
@@ -560,7 +560,7 @@ criteria.condition([(((User.name, 'LIKE', '%lf%'), 'AND', ((User.active, '=', Tr
 
 ```
 
-#### add_condition(condition, operator)
+#### criteria.add_condition(condition, operator)
 Add criteria condition that filter result set
 ```markdown
 - params:
@@ -597,8 +597,15 @@ criteria.add_condition((User.name, 'LIKE', '%lf%'))
 criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', True)))
 ```
 
-#### Criteria Condition Operators
+##### Criteria condition
+Criteria `condition` object provide filter cirteria.
+```markdown
+- Type: tuple(3)
+- suntax: (model.property, [= | > | < | >= | <= | <> | IN | NOT IN], value)
+          (condition, [AND | OR], condition)
+```
 
+##### Criteria Condition Operators
 | Operator  | Description                            |  Example                                                             |
 | --------- | ---------------------------------------| -------------------------------------------------------------------- |
 | =        | Equal                                   | (User.name, '=', 'sanish')                                           |
@@ -614,5 +621,205 @@ criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', 
 | OR       | Join two condition with `OR` operator   | ((User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False))  |
 
 
+#### criteria.limit
+Setter limit criteria
+```markdown
+- Type: int
+```
 
+### criteria.offset
+Setter offset criteria
+```markdown
+- Type: int
+```
+
+eg: `WHERE users.name LIKE '%lf%' LIMIT 5 OFFSET 10`
+```python
+criteria = Criteria()
+criteria.add_condition((User.name, 'LIKE', '%lf%'))
+criteria.limit = 5
+criteria.offset = 10
+```
+
+#### criteria.set_order_by(order_by_props, order)
+Set order by criteria
+```markdown
+- params:
+    - order_by_props:
+        - Order by property or list of order by properties
+        - Type: property | list
+        - Require
+    - order:
+        - Define order on asc or desc
+        - Type: str
+        - Default: ASC
+        - Optional
+        - Allow values: [ASC | DESC]
+```
+
+eg: `WHERE users.name LIKE '%lf%' ORDER BY users.name DESC`
+```python
+criteria = Criteria()
+criteria.add_condition((User.name, 'LIKE', '%lf%'))
+criteria.set_order_by(User.name, 'DESC')
+```
+
+eg: `ORDER BY users.name, user.email ASC`
+```python
+criteria = Criteria()
+criteria.set_order_by([User.name, User.email])
+```
+
+#### criteria.oin_with(relation, join_type)
+- Add join with criteria. For joining should define relation in model
+`````markdown
+- params:
+    - relation:
+        - Model relation property
+        - Type: property
+        - Require
+    - join_type:
+        - Define join type
+        - Type: str
+        - Default value: 'LEFT'
+        - Optional
+        - Allow values: [LEFT, RIGHT, FULL]
+`````
+
+eg: `LEFT JOIN users on roles.id=users.role_id WHERE roles.name='admin' AND users.email='mjsanish+admin@gmail.com'` 
+```python
+criteria = Criteria()
+criteria.join_with(Role.users)
+criteria.add_condition((Role.name, '=', 'admin'))
+criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
+```
+
+## Block Records INSERT | UPDATE
+Model Block function allow insert/update lots of data quickly. 
+
+### insert_block(raw_data_list)
+Insert block of data
+```markdown
+- params:
+    - raw_data_list:
+        - List of data
+        - Type: list of disct 
+        - Require
+```
+
+eg:
+```python
+    data_list = [{
+        'email': 'mjsanish+1@gmail.com',
+        'name': 'sanish1',
+        "is_deleted": False,
+        'organization_id' : '4707145032222247178',
+        'role_id': '1',
+        'created_by': '-1202895510759970011',
+    }, {
+        'email': 'mjsanish+2@gmail.com',
+        'name': 'sanish2',
+        "is_deleted": False,
+        'organization_id' : '4707145032222247178',
+        'role_id': '1',
+        'created_by': '-1202895510759970011',
+    }]
+
+    users = User.insert_block(data_list)
+```
+
+
+### update_block(cls, raw_data_list)
+Update block of data
+```markdown
+- params:
+    - raw_data_list:
+        - List of data
+        - Type: list of disct 
+        - Require
+```
+
+eg:
+```python
+    data_list = [{
+        'id': '271fc766-6de7-44c7-bd1c-b04954cd401f',
+        'email': 'mjsanish+100@gmail.com',
+        'name': 'sanish100'
+    }, {
+        'id': '20b2e97f-4c77-460b-9324-bb7530d6b8f7',
+        'role_id': '2'
+    }]
+
+    users = User.update_block(data_list)
+```
+
+
+## Save Record (ADD / UPDATE)
+Model function provide ability to save model object.
+
+### save(model_obj)
+Add/Update model data to database
+```markdown
+- params:
+    - model_obj:
+        - Model object
+        - Type: Model
+        - Require 
+- return:
+    - Saved or updated  model
+    - Type: Model
+```
+
+eg:
+```python
+user = User()
+user.name = 'some one'
+user.email = 'someone@gmail.com'
+user.organization_id = '4707145032222247178'
+user.role_id = '1'
+
+user = User.save(user)
+```
+
+### save_all(model_obj_list)
+Add / Update list of model to database
+```markdown
+- params:
+    - model_obj_list:
+        - list of model objects
+        - Type: list
+        - Require
+- return: 
+    - list of model
+```
+
+eg:
+```python
+user = User.find_by_pk('d3fefb2a-ef30-4c39-a560-81b459f5024e')
+user.name = 'some one'
+user.email = 'someone@gmail.com'
+user.organization_id = '4707145032222247178'
+user.role_id = '1'
+
+users = []
+users.append(user)
+user = User.save_all(users)
+```
+
+### update_by_pk(pk, data)
+Update by primary key of model to database
+
+```markdown
+- params:
+    - pk:
+        - primary key value
+        - Type: int | str (base on primary key type)
+        - Require
+    - data:
+        - Data to update
+        - Type: dict
+        - Require
+- return: 
+    - model object
+```
 
