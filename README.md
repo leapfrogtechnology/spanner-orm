@@ -599,19 +599,19 @@ criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', 
 
 #### Criteria Condition Operators
 
-| Operator  | Description                            |  Example                                                          |
-| --------- | ---------------------------------------| ----------------------------------------------------------------- |
-| =        | Equal                                   | (User.name, '=', 'sanish')                                        |
-| >        | Greater Than                            | (User.points, '>', 100)                                           |
-| <        | Less Than                               | (User.points, '<', 2000)                                          |
-| >=       | Greater Than Or Equal                   | (User.points, '>=', 100)                                          |
-| <=       | Less Than Or Equal                      | (User.points, '<=', 1000)                                         |
-| <>       | Not Equal                               | (User.name, '<>', 'sanish')                                       |
-| LIKE     | Search for a pattern                    | (User.name, 'LIKE', '%sa%')                                       |
-| IN       | Search for `In` Multiple values         | (User.role_id, 'IN', ['1', '2'])                                  |
-| NOT IN   | Search for `Not In` Multiple values     | (Task.status, 'NOT IN', ['pending', 'under review'])              |
-| AND      | Join two condition with `AND` operator  | (User.name, 'LIKE', '%sa%') , 'AND', (User.is_deleted, '=', False)|
-| OR       | Join two condition with `OR` operator   | (User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False) |
+| Operator  | Description                            |  Example                                                             |
+| --------- | ---------------------------------------| -------------------------------------------------------------------- |
+| =        | Equal                                   | (User.name, '=', 'sanish')                                           |
+| >        | Greater Than                            | (User.points, '>', 100)                                              |
+| <        | Less Than                               | (User.points, '<', 2000)                                             |
+| >=       | Greater Than Or Equal                   | (User.points, '>=', 100)                                             |
+| <=       | Less Than Or Equal                      | (User.points, '<=', 1000)                                            |
+| <>       | Not Equal                               | (User.name, '<>', 'sanish')                                          |
+| LIKE     | Search for a pattern                    | (User.name, 'LIKE', '%sa%')                                          |
+| IN       | Search for `In` Multiple values         | (User.role_id, 'IN', ['1', '2'])                                     |
+| NOT IN   | Search for `Not In` Multiple values     | (Task.status, 'NOT IN', ['pending', 'under review'])                 |
+| AND      | Join two condition with `AND` operator  | ((User.name, 'LIKE', '%sa%') , 'AND', (User.is_deleted, '=', False)) |
+| OR       | Join two condition with `OR` operator   | ((User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False))  |
 
 
 
