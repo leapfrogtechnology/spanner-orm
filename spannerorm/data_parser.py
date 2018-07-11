@@ -256,6 +256,18 @@ class DataParser(object):
 
         model_attrs = Helper.get_model_attrs(model_cls)
         for model_obj in model_obj_list:
+            if model_obj.is_new_record():
+                model_attrs = Helper.get_model_attrs(model_obj)
+                for attr_name in model_attrs:
+                    attr = model_attrs.get(attr_name)
+                    if attr.default is not None and attr.value is None:
+                        attr.value = attr.default
+
+                if model_obj.get_pk_value() is None:
+                    primary_key_name = model_cls._meta().primary_key
+                    pk = model_obj._meta().generate_pk()
+                    model_obj.__setattr__(primary_key_name, pk)
+
             if model_obj.validate():
                 data_tuple = ()
                 for attr_name in model_attrs:
