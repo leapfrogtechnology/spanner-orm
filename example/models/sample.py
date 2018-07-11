@@ -2,11 +2,7 @@ from time import time
 from uuid import uuid4
 from spannerorm import BaseModel, IntegerField, StringField, BoolField, TimeStampField, DateField
 
-# initialize with default value
-# model pass data
-# none criteria
-# on update/save retrive updated data
-class Temp(BaseModel):
+class Sample(BaseModel):
     # Db Fields
     _id = StringField(db_column='id', null=False)
     _name = StringField(db_column='name', null=False, reg_exr='^[A-Z][ a-z]+')
@@ -90,10 +86,9 @@ class Temp(BaseModel):
         self._modified_at = created
 
     class Meta:
-        db_table = 'temp'
+        db_table = 'sample'
         primary_key = 'id'
 
         @classmethod
         def generate_pk(cls):
-            print('--------- temp')
-            return uuid4()
+            return str(uuid4())
