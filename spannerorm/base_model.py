@@ -122,6 +122,22 @@ class BaseModel(object):
         """
         return Helper.validate_model_prop(self, prop)
 
+    def set_props(self, raw_data):
+        """
+        Set model properties
+
+        :type raw_data: dict
+        :param raw_data: properties key-values
+
+        :rtype: BaseModel
+        :return:
+        """
+        for key in raw_data:
+            if self.has_property(key):
+                self.__setattr__(key, raw_data.get(key))
+
+        return self
+
     @classmethod
     def _meta(cls):
         return cls.__dict__.get('Meta')
@@ -171,7 +187,8 @@ class BaseModel(object):
             join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
             join_result_sets = DataParser.map_model(join_results, multijoin_query.get('select_cols'), refer_to_model)
 
-            DataParser.map_multi_join_model(result_sets, join_result_sets, relation_name, relation_attr.join_on, relation_attr.refer_to)
+            DataParser.map_multi_join_model(result_sets, join_result_sets, relation_name, relation_attr.join_on,
+                                            relation_attr.refer_to)
 
     @classmethod
     def _fetch_primary_keys(cls, criteria):
@@ -208,7 +225,7 @@ class BaseModel(object):
             'db_table': class_meta.db_table,
             'primary_key': class_meta.primary_key,
             'properties': Helper.get_model_props_details(cls),
-            'relations' : Helper.get_relation_props_details(cls)
+            'relations': Helper.get_relation_props_details(cls)
         }
 
         return meta_data
@@ -441,7 +458,6 @@ class BaseModel(object):
         :return: model object
         """
         prepare_data = DataParser.build_model_data(cls, [model_obj])
-        print(prepare_data)
         Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
 
         model_object = prepare_data.get('model_list')[0]
