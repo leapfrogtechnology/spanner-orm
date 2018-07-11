@@ -129,12 +129,10 @@ def update_block():
 @app.route('/user/save')
 def save_user():
     user = User()
-    user.id = User._meta().generate_pk()
     user.name = 'some one'
     user.email = 'someone@gmail.com'
     user.organization_id = '4707145032222247178'
     user.role_id = '1'
-    user.created_at = time()
     user.created_by = '-1202895510759970011'
 
     user = User.save(user)
