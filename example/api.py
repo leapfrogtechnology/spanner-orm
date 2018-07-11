@@ -8,7 +8,7 @@ from time import time
 from datetime import date
 from models import User, Role, Organization
 from flask import Flask, jsonify, g, request
-from spannerorm import Connection, Criteria, ModelJSONEncoder
+from spannerorm import Connection, Criteria, ModelJSONEncoder, SpannerDb
 
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
@@ -43,8 +43,8 @@ def user_meta_data():
 @app.route('/user/one')
 def one_user():
     criteria = Criteria()
-    criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '4707145032222247178')])
-    criteria.add_condition((User.is_deleted, '=', False))
+    #criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '4707145032222247178')])
+    #criteria.add_condition((User.is_deleted, '=', False))
     user = User.find(criteria)
     return jsonify(user)
 
@@ -59,8 +59,8 @@ def user_by_pk():
 def find_all_users():
     criteria = Criteria()
     criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
-    criteria.add_condition((User.role_id, 'IN', ['1', '2']))
-    criteria.add_condition((User.organization_id, 'NOT IN', ['4707145032222247178']))
+    #criteria.add_condition((User.role_id, 'IN', ['1', '2']))
+    #criteria.add_condition((User.organization_id, 'NOT IN', ['4707145032222247178']))
     criteria.set_order_by(User.email, 'ASC')
     criteria.limit = 2
 
@@ -150,6 +150,15 @@ def update_user():
 
     user = User.save(user)
     return jsonify(user)
+
+@app.route('/query')
+def execute_query():
+    query_string = 'SELECT users.created_by, users.email, users.role_id, users.acl, users.is_deleted, users.name, ' \
+                   'users.created_at, users.updated_at, users.phone_number, users.updated_by, users.password, users.id, ' \
+                   'users.photo_url, users.organization_id FROM users'
+
+    result = SpannerDb.execute_query(query_string)
+    return jsonify(result)
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ Connection.config(instance_id=instance_id,
                   ping_interval=ping_interval)
 
 
-print('------------------------ Find user with role (ManyToOne) ----------------------------------------------------------')
+print('------------------------ Find user with role (ManyToOne) ------------------------------------------------------')
 criteria = Criteria()
 criteria.join_with(User.role)
 user = User.find()
