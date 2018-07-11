@@ -1,4 +1,5 @@
 import re
+import time
 import inspect
 import importlib
 import base_model
@@ -6,6 +7,7 @@ from .dataType import *
 from datetime import date
 from .dataType import DataType
 from .relation import Relation
+from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
 
 class Helper(object):
@@ -657,3 +659,28 @@ class Helper(object):
                 return model
 
         return None
+
+    @classmethod
+    def process_result_set(cls, results):
+        data = []
+        for row in results:
+            row_data = {}
+
+            for col in row:
+                index = 0
+
+                for field in results.fields:
+                    if isinstance(row[index], unicode):
+                        value = str(row[index])
+                    elif isinstance(row[index], DatetimeWithNanoseconds):
+                        value = time.mktime(row[index].timetuple())
+                    else:
+                        value = row[index]
+
+                    field_name = str(field.name)
+                    row_data[field_name] = value
+                    index += 1
+            data.append(row_data)
+
+        return data
+
