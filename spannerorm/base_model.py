@@ -122,7 +122,7 @@ class BaseModel(object):
         """
         return Helper.validate_model_prop(self, prop)
 
-    def set_props(self, raw_data):
+    def cv(self, raw_data):
         """
         Set model properties
 
