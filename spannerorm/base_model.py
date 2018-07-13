@@ -134,7 +134,11 @@ class BaseModel(object):
         """
         for key in raw_data:
             if self.has_property(key):
-                self.__setattr__(key, raw_data.get(key))
+                value = raw_data.get(key)
+                if isinstance(value, unicode):
+                    self.__setattr__(key, str(raw_data.get(key)))
+                else:
+                    self.__setattr__(key, raw_data.get(key))
 
         return self
 

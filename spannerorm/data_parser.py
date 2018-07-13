@@ -234,7 +234,11 @@ class DataParser(object):
             data = data_sets.get(pk)
             for key in data:
                 if model.has_property(key):
-                    model.__setattr__(key, data.get(key))
+                    value = data.get(key)
+                    if isinstance(value, unicode):
+                        model.__setattr__(key, str(data.get(key)))
+                    else:
+                        model.__setattr__(key, data.get(key))
 
         return cls.build_model_data(model_cls, model_obj_list)
 
