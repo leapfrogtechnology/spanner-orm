@@ -501,11 +501,12 @@ class BaseModel(object):
         :rtype: BaseModel
         :return: updated model object
         """
-        primary_key_name = cls._meta().primary_key
-        data[primary_key_name] = pk
-        parse_raw_data = DataParser.parse_raw_data(cls, [data], insert=False)
-        Executor.update_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
-        return parse_raw_data.get('model_list')[0]
+        model_object = cls.find_by_pk(pk)
+        if not model_object:
+            raise AssertionError('Record not exist with primary key : {}'.format(pk))
+
+        model_object.set_props(data)
+        return cls.save(model_object)
 
     @classmethod
     def relations(cls):
