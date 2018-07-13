@@ -1,4 +1,5 @@
 import re
+import six
 import time
 import inspect
 import importlib
@@ -350,12 +351,12 @@ class Helper(object):
         """
         is_valid = True
         error_msg = None
-        if null is False and (value is None or value.strip() == ''):
+        if null is False and (value is None or (value is not None and str(value).strip() == '')):
             is_valid = False
             error_msg = 'Data should not be None or empty'
 
         if value is not None:
-            if isinstance(value, str) is False:
+            if isinstance(value, six.string_types) is False:
                 is_valid = False
                 error_msg = 'Data type should be <str>'
 

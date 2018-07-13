@@ -65,6 +65,7 @@ class DataParser(object):
         column_prop_maps = cls.model_column_attr_maps(model_class, table_name)
         column_relation_maps = cls.model_relation_attr_maps(model_class)
         data_list = []
+        pk_list = []
         for result in parse_results:
             model_object = model_class()
             model_object._model_state().is_new = False
@@ -81,7 +82,9 @@ class DataParser(object):
                     relation_attr.data = relation_model
                     model_object._model_state().add_with_relation(relation_name[1:])
 
-            data_list.append(model_object)
+            if model_object.get_pk_value() not in pk_list:
+                data_list.append(model_object)
+                pk_list.append(model_object.get_pk_value())
 
         return data_list
 
@@ -133,9 +136,7 @@ class DataParser(object):
             join_data = []
             join_on_prop_value = getattr(model, join_on)
             for join_model in join_model_list:
-                print(join_model)
                 refer_to_prop_value = getattr(join_model, refer_to)
-                print(refer_to_prop_value)
                 if refer_to_prop_value == join_on_prop_value:
                     join_data.append(join_model)
 
@@ -233,7 +234,11 @@ class DataParser(object):
             data = data_sets.get(pk)
             for key in data:
                 if model.has_property(key):
-                    model.__setattr__(key, data.get(key))
+                    value = data.get(key)
+                    if isinstance(value, unicode):
+                        model.__setattr__(key, str(data.get(key)))
+                    else:
+                        model.__setattr__(key, data.get(key))
 
         return cls.build_model_data(model_cls, model_obj_list)
 

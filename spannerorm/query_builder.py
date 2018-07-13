@@ -152,7 +152,7 @@ class QueryBuilder:
         """
         in_clause = ''
         for value in in_values:
-            if isinstance(value, str):
+            if isinstance(value, str) or isinstance(value, unicode):
                 if in_clause == '':
                     in_clause += "'" + value + "'"
                 else:
