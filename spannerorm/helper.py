@@ -3,10 +3,9 @@ import six
 import time
 import inspect
 import importlib
-import base_model
 from .dataType import *
+from . import base_model
 from datetime import date
-from .dataType import DataType
 from .relation import Relation
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
@@ -189,7 +188,7 @@ class Helper(object):
         """
         model_attr_name = '_' + prop_name
         model_attrs = Helper.get_model_attrs(model_cls)
-        if model_attrs.has_key(model_attr_name) is False:
+        if model_attr_name not in model_attrs:
             raise TypeError('Criteria model property {} not exist'.format(model_attr_name))
 
         return model_attrs.get(model_attr_name)
@@ -229,7 +228,7 @@ class Helper(object):
         """
         model_attr_name = '_' + prop_name
         model_attrs = Helper.get_model_relations_attrs(model_cls)
-        if model_attrs.has_key(model_attr_name) is False:
+        if model_attr_name not in model_attrs:
             raise TypeError('Criteria model property {} not exist'.format(model_attr_name))
 
         return model_attrs.get(model_attr_name)
@@ -265,7 +264,7 @@ class Helper(object):
         model_attr_name = '_' + prop.fget.__name__
         model_attrs = Helper.get_model_attrs(model_cls)
 
-        if model_attrs.has_key(model_attr_name):
+        if model_attr_name in model_attrs:
             attr = model_attrs.get(model_attr_name)
             if isinstance(attr, IntegerField) or isinstance(attr, FloatField):
                 return Helper.validate_number_field(attr.value, max_value=attr.max_value, min_value=attr.min_value,
@@ -512,7 +511,7 @@ class Helper(object):
         props_details = {}
         for prop_name in model_props:
             model_attr_name = '_' + prop_name
-            if model_attrs.has_key(model_attr_name):
+            if model_attr_name in model_attrs:
                 attr = model_attrs.get(model_attr_name)
                 props_details.update({
                     prop_name: Helper.get_prop_details(attr)
@@ -537,7 +536,7 @@ class Helper(object):
         props_details = {}
         for prop_name in model_props:
             model_attr_name = '_' + prop_name
-            if model_relation_attrs.has_key(model_attr_name):
+            if model_attr_name in model_relation_attrs:
                 attr = model_relation_attrs.get(model_attr_name)
                 props_details.update({
                     prop_name: Helper.get_relation_pop_detail(attr)
@@ -671,7 +670,7 @@ class Helper(object):
                 index = 0
 
                 for field in results.fields:
-                    if isinstance(row[index], unicode):
+                    if isinstance(row[index], six.string_types):
                         value = str(row[index])
                     elif isinstance(row[index], DatetimeWithNanoseconds):
                         value = time.mktime(row[index].timetuple())

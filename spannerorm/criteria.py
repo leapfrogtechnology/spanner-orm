@@ -138,6 +138,7 @@ class Criteria(object):
 
         self._join_withs.append({'relation': relation, 'join_type': join_type})
 
+
 class CriteriaBuilder(object):
 
     @classmethod
@@ -207,9 +208,9 @@ class CriteriaBuilder(object):
         """
         if isinstance(sub_condition, tuple) is False or len(sub_condition) != 3:
             raise TypeError('Invalid criteria condition: {}'.format(sub_condition))
-        if sub_where_criteria.has_key('and_conditions') is False \
+        if 'and_conditions' not in sub_where_criteria \
                 or isinstance(sub_where_criteria.get('and_conditions'), list) is False \
-                or sub_where_criteria.has_key('or_conditions') is False \
+                or 'or_conditions' not in sub_where_criteria \
                 or isinstance(sub_where_criteria.get('or_conditions'), list) is False:
             raise TypeError('Invalid where criteria data initialized: {}'.format(sub_where_criteria))
 
