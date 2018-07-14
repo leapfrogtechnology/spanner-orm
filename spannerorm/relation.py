@@ -1,6 +1,6 @@
 import copy
-from . import helper
-from . import base_model
+import spannerorm.helper
+import spannerorm.base_model
 from functools import wraps
 from .criteria import Criteria
 
@@ -41,16 +41,16 @@ class Relation(object):
         """
         Fetch relation data
 
-        :type model_obj: base_model.BaseModel
+        :type model_obj: spannerorm.base_model.BaseModel
         :param model_obj: model object
 
-        :rtype: base_model.BaseModel | list | None
+        :rtype: spannerorm.base_model.BaseModel | list | None
         :return:
         """
         join_on = self.join_on
         refer_to = self.refer_to
-        join_on_value = helper.Helper.get_model_props_value_by_key(model_obj, join_on)
-        refer_model_prop = helper.Helper.get_model_prop_by_name(refer_model, refer_to)
+        join_on_value = spannerorm.helper.Helper.get_model_props_value_by_key(model_obj, join_on)
+        refer_model_prop = spannerorm.helper.Helper.get_model_prop_by_name(refer_model, refer_to)
 
         if self.relation_type == 'ManyToOne' or self.relation_type == 'OneToOne':
             criteria = Criteria()
@@ -90,7 +90,7 @@ class Relation(object):
         :type func: function
         :param func:
 
-        :rtype: list | base_model.BaseModel | None
+        :rtype: list | spannerorm.base_model.BaseModel | None
         :return:
         """
 
@@ -125,7 +125,7 @@ class Relation(object):
             model_obj = args[0]
             value = args[1]
 
-            model_attr = helper.Helper.model_relational_attr_by_prop_name(model_obj, func.__name__)
+            model_attr = spannerorm.helper.Helper.model_relational_attr_by_prop_name(model_obj, func.__name__)
             attr = copy.deepcopy(model_attr)
             attr.data = value
 

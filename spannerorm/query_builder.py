@@ -1,7 +1,7 @@
 import six
 import logging
-from . import base_model
-from . import criteria
+import spannerorm.base_model
+import spannerorm.criteria
 from datetime import date
 from .helper import Helper
 from .relation import Relation
@@ -10,10 +10,10 @@ from .relation import Relation
 class QueryBuilder:
     def __init__(self, model_class, criteria=None):
         """
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
 
-        :type criteria: criteria.Criteria
+        :type criteria: spannerorm.criteria.Criteria
         :param criteria:
         """
         self.model_class = model_class
@@ -73,7 +73,7 @@ class QueryBuilder:
         """
         Return select clause of model
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
         :return:
         """
@@ -271,7 +271,7 @@ class QueryBuilder:
         """
         set OnToMany or ManyToMany Join select clause
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: refer to model class
 
         :type relation_name: str
