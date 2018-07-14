@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="spannerorm",
-    version="0.0.1",
+    version="0.0.2",
     author="Sanish Maharjan",
     author_email="sanishmaharjan@lftechnology.com",
     description="ORM for cloud spanner",
@@ -17,7 +17,7 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     classifiers=(
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 2.7 - 3.6",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
