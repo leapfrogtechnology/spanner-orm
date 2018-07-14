@@ -165,7 +165,7 @@ def count_role():
     criteria = Criteria()
     criteria.join_with(Role.users)
     count = Role.count(criteria)
-    return count
+    return str(count)
 
 
 @app.route('/query')

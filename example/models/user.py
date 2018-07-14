@@ -1,8 +1,8 @@
 import hashlib
-from . import role
+import models.role
 from time import time
 from uuid import uuid4
-from . import organization
+import models.organization
 from spannerorm import BaseModel, StringField, BoolField, TimeStampField, ManyToOne
 
 
@@ -187,8 +187,8 @@ class User(BaseModel):
         @classmethod
         def relations(cls):
             return {
-                'role': role.Role,
-                'organization': organization.Organization
+                'role': models.role.Role,
+                'organization': models.organization.Organization
             }
 
         @classmethod

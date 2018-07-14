@@ -1,4 +1,4 @@
-from . import user
+import models.user
 from time import time
 from uuid import uuid4
 from spannerorm import BaseModel, StringField, BoolField, TimeStampField, OneToMany
@@ -148,7 +148,7 @@ class Organization(BaseModel):
         @classmethod
         def relations(cls):
             return {
-                'users': user.User
+                'users': models.user.User
             }
 
         @classmethod
