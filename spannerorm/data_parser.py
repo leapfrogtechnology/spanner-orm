@@ -1,6 +1,6 @@
 import time
 import six
-from . import base_model
+import spannerorm.base_model
 from .helper import Helper
 from datetime import datetime
 from .criteria import Criteria
@@ -55,7 +55,7 @@ class DataParser(object):
         :type select_cols: list
         :param select_cols:
 
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
 
         :rtype: list
@@ -94,13 +94,13 @@ class DataParser(object):
         """
         Map result to relational model data
 
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class: relation model class
 
         :type result: dict
         :param result: result set
 
-        :rtype: base_model.BaseModel
+        :rtype: spannerorm.base_model.BaseModel
         :return:
         """
         table_name = model_class._meta().db_table
@@ -149,7 +149,7 @@ class DataParser(object):
         """
         Map model props with db columns
 
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
 
         :rtype: dict
@@ -170,7 +170,7 @@ class DataParser(object):
         """
         Map model props with db columns
 
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
 
         :rtype: dict
@@ -191,7 +191,7 @@ class DataParser(object):
         """
         Parse raw data for insert
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: model class
 
         :type raw_data_list: list
@@ -248,7 +248,7 @@ class DataParser(object):
         """
         Build model data that can be use for save (add/update)
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
 
         :type model_obj_list: list

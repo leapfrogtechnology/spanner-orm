@@ -4,7 +4,7 @@ import time
 import inspect
 import importlib
 from .dataType import *
-from . import base_model
+import spannerorm.base_model
 from datetime import date
 from .relation import Relation
 from google.api_core.datetime_helpers import DatetimeWithNanoseconds
@@ -50,7 +50,7 @@ class Helper(object):
         """
         Return model prop by name
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
 
         :type prop_name: str
@@ -70,7 +70,7 @@ class Helper(object):
         """
         Return model props key-value
 
-        :type model_obj: base_model.BaseModel
+        :type model_obj: spannerorm.base_model.BaseModel
         :param model_obj: model
 
         :type prop_name: str
@@ -90,7 +90,7 @@ class Helper(object):
         """
         Return model props
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: model
 
         :rtype: dict
@@ -107,7 +107,7 @@ class Helper(object):
         """
         Return model attr
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :rtype: dict
@@ -124,7 +124,7 @@ class Helper(object):
         """
         Return model relation attrs
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :rtype: dict
@@ -141,7 +141,7 @@ class Helper(object):
         """
         Return model props key-value
 
-        :type model_obj: base_model.BaseModel
+        :type model_obj: spannerorm.base_model.BaseModel
         :param model_obj: model
 
         :rtype: dict
@@ -158,7 +158,7 @@ class Helper(object):
         """
         Return model attribute by property
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :type prop: property
@@ -177,7 +177,7 @@ class Helper(object):
         """
         Return model attribute by property name
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :type prop_name: str
@@ -198,7 +198,7 @@ class Helper(object):
         """
         Return model relational attribute by property
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :type prop: property
@@ -217,7 +217,7 @@ class Helper(object):
         """
         Return model relational attribute by property name
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :type prop_name: str
@@ -249,7 +249,7 @@ class Helper(object):
         """
         Validate model attr
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: Model class
 
         :type prop: property
@@ -499,7 +499,7 @@ class Helper(object):
         """
         Return model props details
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
 
         :rtype: dict
@@ -524,7 +524,7 @@ class Helper(object):
         """
         Return model relation props details
 
-        :type model_cls: base_model.BaseModel
+        :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
 
         :rtype: dict
@@ -627,10 +627,10 @@ class Helper(object):
         """
         Init model object with default values
 
-        :type model_class: base_model.BaseModel
+        :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
 
-        :rtype: base_model.BaseModel
+        :rtype: spannerorm.base_model.BaseModel
         :return: model object
         """
         model_object = model_class()
@@ -650,7 +650,7 @@ class Helper(object):
         :type prop_module_name: str
         :param prop_module_name:
 
-        :rtype: base_model.BaseModel
+        :rtype: spannerorm.base_model.BaseModel
         :return:
         """
         prop_module = importlib.import_module(prop_module_name)
