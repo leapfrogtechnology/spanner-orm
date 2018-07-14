@@ -1,6 +1,7 @@
 import sys
 import logging
-sys.path.insert(0,'..')
+
+sys.path.insert(0, '..')
 
 from spannerorm import Connection, Criteria
 from models.user import User
@@ -20,7 +21,6 @@ Connection.config(instance_id=instance_id,
                   pool_size=pool_size,
                   time_out=time_out,
                   ping_interval=ping_interval)
-
 
 print('------------------------ Find user with out criteria ----------------------------------------------------------')
 

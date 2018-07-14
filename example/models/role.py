@@ -1,4 +1,4 @@
-import user
+from . import user
 from time import time
 from uuid import uuid4
 from spannerorm import BaseModel, StringField, BoolField, TimeStampField, OneToMany

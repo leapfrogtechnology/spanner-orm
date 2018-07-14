@@ -160,6 +160,13 @@ def update_user():
     user = User.save(user)
     return jsonify(user)
 
+@app.route('/count')
+def count_role():
+    criteria = Criteria()
+    criteria.join_with(Role.users)
+    count = Role.count(criteria)
+    return count
+
 
 @app.route('/query')
 def execute_query():

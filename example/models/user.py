@@ -1,8 +1,8 @@
 import hashlib
-import role
-import organization
+from . import role
 from time import time
 from uuid import uuid4
+from . import organization
 from spannerorm import BaseModel, StringField, BoolField, TimeStampField, ManyToOne
 
 
