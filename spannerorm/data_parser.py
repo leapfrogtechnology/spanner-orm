@@ -1,5 +1,6 @@
 import time
-import base_model
+import six
+from . import base_model
 from .helper import Helper
 from datetime import datetime
 from .criteria import Criteria
@@ -30,7 +31,7 @@ class DataParser(object):
             index = 0
 
             for field in select_cols:
-                if isinstance(row[index], unicode):
+                if isinstance(row[index], six.string_types):
                     value = str(row[index])
                 elif isinstance(row[index], DatetimeWithNanoseconds):
                     value = time.mktime(row[index].timetuple())

@@ -1,6 +1,6 @@
 import copy
-import helper
-import base_model
+from . import helper
+from . import base_model
 from functools import wraps
 from .criteria import Criteria
 

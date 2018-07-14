@@ -1,3 +1,4 @@
+import six
 import copy
 import inspect
 from .helper import Helper
@@ -35,7 +36,7 @@ class BaseModel(object):
         relation_attrs = Helper.get_model_relations_attrs(self)
         for key, value in inspect.getmembers(self.__class__, Helper.is_property):
             attr_name = '_' + key
-            if relation_attrs.has_key(attr_name) is False or key in self._model_state().with_relation:
+            if attr_name not in relation_attrs or key in self._model_state().with_relation:
                 model_props[key] = self.__getattribute__(key)
 
         return model_props
@@ -135,7 +136,7 @@ class BaseModel(object):
         for key in raw_data:
             if self.has_property(key):
                 value = raw_data.get(key)
-                if isinstance(value, unicode):
+                if isinstance(value, six.string_types):
                     self.__setattr__(key, str(raw_data.get(key)))
                 else:
                     self.__setattr__(key, raw_data.get(key))
@@ -257,7 +258,7 @@ class BaseModel(object):
         :return: True if property exist else False
         """
         model_props = Helper.get_model_props(cls)
-        return model_props.has_key(property_name)
+        return property_name in model_props
 
     @classmethod
     def count(cls, criteria=None):

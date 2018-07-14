@@ -1,5 +1,7 @@
+import six
 import logging
-import base_model
+from . import base_model
+from . import criteria
 from datetime import date
 from .helper import Helper
 from .relation import Relation
@@ -7,6 +9,13 @@ from .relation import Relation
 
 class QueryBuilder:
     def __init__(self, model_class, criteria=None):
+        """
+        :type model_class: base_model.BaseModel
+        :param model_class:
+
+        :type criteria: criteria.Criteria
+        :param criteria:
+        """
         self.model_class = model_class
         self.criteria = criteria
         self.meta = self.model_class._meta()
@@ -152,7 +161,7 @@ class QueryBuilder:
         """
         in_clause = ''
         for value in in_values:
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, str) or isinstance(value, six.string_types):
                 if in_clause == '':
                     in_clause += "'" + value + "'"
                 else:
@@ -281,7 +290,7 @@ class QueryBuilder:
             else:
                 sub_select_clause += ', ' + select_column
 
-        if self.multijoin_queries.has_key(relation_name) is False:
+        if relation_name not in self.multijoin_queries:
             self.multijoin_queries[relation_name] = {}
 
         multijoin_query = self.multijoin_queries.get(relation_name)
@@ -308,7 +317,7 @@ class QueryBuilder:
         refer_to_model = relations.get(relation_name)
         relation_prop = Helper.get_model_prop_by_name(self.model_class, relation_name)
 
-        if self.multijoin_queries.has_key(relation_name) is False:
+        if relation_name not in self.multijoin_queries:
             self.multijoin_queries[relation_name] = {}
 
         multijoin_query = self.multijoin_queries.get(relation_name)
@@ -373,9 +382,11 @@ class QueryBuilder:
         db_table = self.table_name
         join_clause = self._get_join_clause()
         where_clause = self._get_where_clause()
-
-        count_query = 'SELECT COUNT(*) FROM {db_table} {join_clause} {where_clause}' \
-            .format(db_table=db_table, join_clause=join_clause, where_clause=where_clause)
+        primary_key_prop = self.model_class.primary_key_property()
+        primary_key_attr = Helper.model_attr_by_prop(self.model_class, primary_key_prop)
+        db_column = primary_key_attr.db_column
+        count_query = 'SELECT COUNT(DISTINCT {db_table}.{pk}) FROM {db_table} {join_clause} {where_clause}' \
+            .format(db_table=db_table, join_clause=join_clause, where_clause=where_clause, pk=db_column)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', count_query, self.params, self.param_types)
         return count_query
 
