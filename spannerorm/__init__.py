@@ -1,7 +1,8 @@
 from .criteria import Criteria
 from .base_model import BaseModel
-from .connection import Connection
 from .spanner_db import SpannerDb
+from .connection import Connection
+from .db_migration import DbMigration
 from .transactional import transactional
 from .model_json_encoder import ModelJSONEncoder
 from .relation import OneToMany, ManyToMany, ManyToOne

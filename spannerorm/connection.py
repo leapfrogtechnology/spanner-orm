@@ -46,8 +46,7 @@ class Connection:
         """
         try:
             if path.exists(service_account_json) is False:
-                return RuntimeError('Service account json file not exist')
-
+                raise RuntimeError('Service account json file not exist')
             # Spanner DB Connection
             spanner_client = Client.from_service_account_json(service_account_json)
             instance = spanner_client.instance(instance_id)
