@@ -8,7 +8,10 @@ from time import time
 from datetime import date
 from models import User, Role, Organization
 from flask import Flask, jsonify, g, request
-from spannerorm import Connection, Criteria, ModelJSONEncoder, SpannerDb
+from google.cloud.spanner_v1.session import Session
+from google.cloud.spanner_v1.transaction import Transaction
+from spannerorm import Connection, Criteria, ModelJSONEncoder, SpannerDb, transactional
+from google.cloud.spanner_v1.pool import SessionCheckout
 
 app = Flask(__name__)
 app.json_encoder = ModelJSONEncoder
@@ -92,7 +95,7 @@ def find_all_user_with():
 def role_one_to_many_users():
     criteria = Criteria()
     criteria.join_with(Role.users)
-    criteria.add_condition(User.is_deleted, '=', False)
+    criteria.add_condition((User.is_deleted, '=', False))
     criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
     criteria.set_order_by(User.email, order='DESC')
     role = Role.find(criteria)
@@ -160,6 +163,7 @@ def update_user():
     user = User.save(user)
     return jsonify(user)
 
+
 @app.route('/count')
 def count_role():
     criteria = Criteria()
@@ -182,6 +186,31 @@ def execute_query():
     criteria.add_condition((User.name, '=', 'sanish'))
     result = SpannerDb.execute_query(query_string)
     return jsonify(result)
+
+
+@app.route('/transaction')
+@transactional
+def with_transaction(transaction):
+    """
+    :type transaction: Transaction
+    :param transaction:
+    :return:
+    """
+    print(transaction)
+    user = User()
+    user.name = 'person 10'
+    user.email = 'transaction@gmail.com'
+    user.organization_id = '4707145032222247178'
+    user.role_id = '1'
+    user.created_by = '-1202895510759970011'
+
+    user = User.save(user, transaction)
+    user.name = 'person 9.1'
+    User.save(user, transaction)
+    print(User.count(transaction=transaction))
+    raise Exception('sssss')
+    return jsonify(user)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8282, debug=True)
