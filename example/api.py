@@ -207,9 +207,33 @@ def with_transaction(transaction):
     user = User.save(user, transaction)
     user.name = 'person 9.1'
     User.save(user, transaction)
-    print(User.count(transaction=transaction))
-    raise Exception('sssss')
+
     return jsonify(user)
+
+
+@app.route('/create-table')
+def create_table():
+    query_string = '''
+                    CREATE TABLE sample (
+                        id STRING(64) NOT NULL,
+                        address STRING(MAX),
+                        is_active BOOL NOT NULL,
+                        join_date DATE,
+                        modified_at TIMESTAMP,
+                        name STRING(100) NOT NULL,
+                        points INT64 NOT NULL,
+                    ) PRIMARY KEY (id)
+                    '''
+    SpannerDb.execute_ddl_query(query_string)
+    return 'success'
+
+@app.route('/drop')
+def drop_table():
+    query_string = '''
+                    DROP TABLE temp
+                    '''
+    SpannerDb.execute_ddl_query(query_string)
+    return 'success'
 
 
 if __name__ == '__main__':
