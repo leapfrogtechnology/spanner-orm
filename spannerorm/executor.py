@@ -155,3 +155,18 @@ class Executor:
             transaction.delete(table_name, key_set)
 
         logging.debug('Query completion Time: %s', (time() - start_time))
+
+    @classmethod
+    def execute_ddl_query(cls, ddl_query_string):
+        """
+        Execute DDL query
+
+        :type ddl_query_string: str
+        :param ddl_query_string: DDL query string
+        """
+        start_time = time()
+        db_instance = Connection.get_instance()
+        operation = db_instance.update_ddl([ddl_query_string])
+
+        operation.result()
+        logging.debug('DDL Query execution completion Time: %s', (time() - start_time))
