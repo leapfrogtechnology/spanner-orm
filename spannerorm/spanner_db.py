@@ -1,12 +1,13 @@
 from datetime import date
 from .executor import Executor
 from .helper import Helper
+from google.cloud.spanner_v1.transaction import Transaction
 from google.cloud.spanner_v1.proto.type_pb2 import Type, INT64, FLOAT64, STRING, BOOL, DATE
 
 
 class SpannerDb(object):
     @classmethod
-    def execute_query(cls, query_string, params=None):
+    def execute_query(cls, query_string, params=None, transaction=None):
         """
         Execute query string
 
@@ -15,6 +16,9 @@ class SpannerDb(object):
 
         :type params: dict
         :param params:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: list
         :return:
@@ -37,5 +41,6 @@ class SpannerDb(object):
                 elif isinstance(value, date):
                     param_types[key] = Type(code=DATE)
 
-        response = Executor.execute_query(query_string=query_string, params=params, param_types=param_types)
+        response = Executor.execute_query(query_string=query_string, params=params, param_types=param_types,
+                                          transaction=transaction)
         return Helper.process_result_set(response)
