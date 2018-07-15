@@ -4,7 +4,7 @@ import sys
 import logging
 from time import time
 from uuid import uuid4
-import sample_migration
+import spannerorm.sample_migration
 from shutil import copyfile
 from datetime import datetime
 from .executor import Executor
@@ -118,7 +118,7 @@ class DbMigration(object):
 
         @property
         def sample_migration_file(self):
-            return os.path.dirname(sample_migration.__file__) + '/sample_migration.py'
+            return os.path.dirname(spannerorm.sample_migration.__file__) + '/sample_migration.py'
 
         def get_new_migration(self, name):
             file_name = '{prefix}_{name}.py'.format(prefix=int(time()), name=name)
