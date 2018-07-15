@@ -4,7 +4,6 @@ from spannerorm import SpannerDb
 class MigrationScript(object):
     @classmethod
     def up(cls):
-        """Sample up migration code"""
         SpannerDb.execute_ddl_query('''
         CREATE TABLE sample (
             id STRING(64) NOT NULL,
