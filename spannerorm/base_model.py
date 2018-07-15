@@ -8,6 +8,7 @@ from .relation import Relation
 from .data_parser import DataParser
 from .query_builder import QueryBuilder
 from .spanner_exception import SpannerException
+from google.cloud.spanner_v1.transaction import Transaction
 
 
 class BaseModel(object):
@@ -148,7 +149,7 @@ class BaseModel(object):
         return cls.__dict__.get('Meta')
 
     @classmethod
-    def _fetch_query(cls, query_string, query_builder):
+    def _fetch_query(cls, query_string, query_builder, transaction=None):
         """
         Fetch data from query string
 
@@ -158,22 +159,29 @@ class BaseModel(object):
         :type query_builder: QueryBuilder
         :param query_builder:
 
+        :type transaction: Transaction
+        :param transaction:
+
         :rtype: list
         :return: model list of result set
         """
-        results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+        results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
+                                         transaction=transaction)
         result_sets = DataParser.map_model(results, query_builder.select_cols, cls)
         cls._fetch_multi_join_query(query_builder, result_sets)
 
         return result_sets
 
     @classmethod
-    def _fetch_multi_join_query(cls, query_builder, result_sets):
+    def _fetch_multi_join_query(cls, query_builder, result_sets, transaction=None):
         """
         Fetch data of multi join relation (OneToMany, ManyToMany) query
 
         :type query_builder: QueryBuilder
         :param query_builder:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :type result_sets: list
         :param result_sets: model list result set
@@ -189,26 +197,31 @@ class BaseModel(object):
                 join_on_values.append(getattr(row, relation_attr.join_on))
 
             query_string = query_builder.get_multijoin_query(relation_name, join_on_values)
-            join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+            join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
+                                                  transaction=transaction)
             join_result_sets = DataParser.map_model(join_results, multijoin_query.get('select_cols'), refer_to_model)
 
             DataParser.map_multi_join_model(result_sets, join_result_sets, relation_name, relation_attr.join_on,
                                             relation_attr.refer_to)
 
     @classmethod
-    def _fetch_primary_keys(cls, criteria):
+    def _fetch_primary_keys(cls, criteria, transaction=None):
         """
         Fetch primary keys by criteria
 
         :type criteria: Criteria
         :param criteria: select criteria
 
+        :type transaction: Transaction
+        :param transaction:
+
         :rtype: list
         :return:
         """
         query_builder = QueryBuilder(cls, criteria)
         query_string = query_builder.get_primary_keys()
-        results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+        results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
+                                         transaction=transaction)
         parse_results = DataParser.parse_result_set(results, [cls._meta().primary_key])
 
         primary_keys = []
@@ -261,12 +274,15 @@ class BaseModel(object):
         return property_name in model_props
 
     @classmethod
-    def count(cls, criteria=None):
+    def count(cls, criteria=None, transaction=None):
         """
         return count
 
         :type criteria: Criteria
         :param criteria:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: int
         :return: count rows
@@ -276,17 +292,21 @@ class BaseModel(object):
 
         query_builder = QueryBuilder(cls, criteria)
         query_string = query_builder.get_count()
-        result = Executor.execute_query(query_string, query_builder.params, query_builder.param_types)
+        result = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
+                                        transaction=transaction)
 
         return result.one()[0]
 
     @classmethod
-    def delete_one(cls, criteria=None):
+    def delete_one(cls, criteria=None, transaction=None):
         """
         Delete match first record that satisfied criteria
 
         :type criteria: Criteria
         :param criteria:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: bool
         :return: true if success
@@ -300,12 +320,12 @@ class BaseModel(object):
         pk_list = []
         if len(primary_keys) != 0:
             pk_list.append((primary_keys[0],))
-            Executor.delete_data(cls._meta().db_table, pk_list)
+            Executor.delete_data(cls._meta().db_table, pk_list, transaction=transaction)
 
         return True
 
     @classmethod
-    def delete_by_pk(cls, pk):
+    def delete_by_pk(cls, pk, transaction=None):
         """
         Delete record by primary key
 
@@ -314,6 +334,9 @@ class BaseModel(object):
 
         :rtype: bool
         :return: true if success
+
+        :type transaction: Transaction
+        :param transaction:
 
         :raise: RuntimeError
         """
@@ -324,18 +347,21 @@ class BaseModel(object):
         pk_list = []
         if len(primary_keys) != 0:
             pk_list.append((primary_keys[0],))
-            Executor.delete_data(cls._meta().db_table, pk_list)
+            Executor.delete_data(cls._meta().db_table, pk_list, transaction=transaction)
             return True
         else:
             raise RuntimeError('Record not exist with primary key : {}'.format(pk))
 
     @classmethod
-    def delete_all(cls, criteria=None):
+    def delete_all(cls, criteria=None, transaction=None):
         """
         Delete all record that satisfied criteria
 
         :type criteria: Criteria
         :param criteria:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: bool
         :return: return True if success
@@ -350,17 +376,20 @@ class BaseModel(object):
         if len(primary_keys) != 0:
             for pk in primary_keys:
                 pk_list.append((pk,))
-            Executor.delete_data(cls._meta().db_table, pk_list)
+            Executor.delete_data(cls._meta().db_table, pk_list, transaction=transaction)
 
         return True
 
     @classmethod
-    def find(cls, criteria=None):
+    def find(cls, criteria=None, transaction=None):
         """
         Fetch single record data filter by criteria
 
         :type criteria: Criteria
         :param criteria:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: BaseModel
         :return: If exist return Model else None
@@ -371,7 +400,7 @@ class BaseModel(object):
         criteria.limit = 1
         query_builder = QueryBuilder(cls, criteria)
         query_string = query_builder.get_query()
-        results = cls._fetch_query(query_string, query_builder)
+        results = cls._fetch_query(query_string, query_builder, transaction)
 
         if len(results) == 1:
             return results[0]
@@ -379,7 +408,7 @@ class BaseModel(object):
             return None
 
     @classmethod
-    def find_by_pk(cls, pk, criteria=None):
+    def find_by_pk(cls, pk, criteria=None, transaction=None):
         """
         Fetch record by primary key filter by criteria
 
@@ -388,6 +417,9 @@ class BaseModel(object):
 
         :type criteria: Criteria
         :param criteria:
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: BaseModel
         :return: If exist return Model else None
@@ -400,7 +432,7 @@ class BaseModel(object):
 
         query_builder = QueryBuilder(cls, criteria)
         query_string = query_builder.get_query()
-        results = cls._fetch_query(query_string, query_builder)
+        results = cls._fetch_query(query_string, query_builder, transaction)
 
         if len(results) == 1:
             return results[0]
@@ -408,12 +440,15 @@ class BaseModel(object):
             return None
 
     @classmethod
-    def find_all(cls, criteria=None):
+    def find_all(cls, criteria=None, transaction=None):
         """
         Fetch records filter by criteria
 
         :type criteria: Criteria
         :param criteria: select criteria
+
+        :type transaction: Transaction
+        :param transaction:
 
         :rtype: list
         :return: list of records
@@ -424,21 +459,25 @@ class BaseModel(object):
         query_builder = QueryBuilder(cls, criteria)
         query_string = query_builder.get_query()
 
-        return cls._fetch_query(query_string, query_builder)
+        return cls._fetch_query(query_string, query_builder, transaction)
 
     @classmethod
-    def insert_block(cls, raw_data_list):
+    def insert_block(cls, raw_data_list, transaction=None):
         """
         Insert data row
 
         :type raw_data_list: list eg: [{'name': 'sanish', 'email': 'mjsanish@gmail.com}]
         :param raw_data_list: insert data list
 
-        :rtype:
-        :return:
+        :type transaction: Transaction
+        :param transaction:
+
+        :rtype: list
+        :return: list of inserted model
         """
         parse_raw_data = DataParser.parse_raw_data(cls, raw_data_list, insert=True)
-        Executor.insert_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
+        Executor.insert_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'),
+                             transaction=transaction)
 
         for model_object in parse_raw_data.get('model_list'):
             model_object._model_state().is_new = False
@@ -446,42 +485,63 @@ class BaseModel(object):
         return parse_raw_data.get('model_list')
 
     @classmethod
-    def update_block(cls, raw_data_list):
+    def update_block(cls, raw_data_list, transaction=None):
+        """
+        Update records in block
+
+        :type raw_data_list: list
+        :param raw_data_list: list of data to update
+
+        :type transaction: Transaction
+        :param transaction:
+
+        :rtype: list
+        :return: list of updated model
+        """
         parse_raw_data = DataParser.parse_raw_data(cls, raw_data_list, insert=False)
-        Executor.update_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'))
+        Executor.update_data(cls._meta().db_table, parse_raw_data.get('columns'), parse_raw_data.get('data_list'),
+                             transaction=transaction)
         return parse_raw_data.get('model_list')
 
     @classmethod
-    def save(cls, model_obj):
+    def save(cls, model_obj, transaction=None):
         """
         Add/Update model data
 
         :type model_obj: BaseModel
         :param model_obj: model object
 
+        :type transaction: Transaction
+        :param transaction:
+
         :rtype: BaseModel
         :return: model object
         """
         prepare_data = DataParser.build_model_data(cls, [model_obj])
-        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
+        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'),
+                           transaction=transaction)
 
         model_object = prepare_data.get('model_list')[0]
         model_object._model_state().is_new = False
         return model_object
 
     @classmethod
-    def save_all(cls, model_obj_list):
+    def save_all(cls, model_obj_list, transaction=None):
         """
         Add / update all model data
 
         :type model_obj_list: list
         :param model_obj_list: list of model objects
 
+        :type transaction: Transaction
+        :param transaction:
+
         :rtype: list
         :return: list of updated model objects
         """
         prepare_data = DataParser.build_model_data(cls, model_obj_list)
-        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'))
+        Executor.save_data(cls._meta().db_table, prepare_data.get('columns'), prepare_data.get('data_list'),
+                           transaction=transaction)
 
         for model_object in prepare_data.get('model_list'):
             model_object._model_state().is_new = False

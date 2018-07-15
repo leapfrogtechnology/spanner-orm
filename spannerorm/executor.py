@@ -5,9 +5,10 @@ from google.cloud.spanner import KeySet
 from google.cloud.spanner_v1.transaction import Transaction
 from google.cloud.spanner_v1.streamed import StreamedResultSet
 
+
 class Executor:
     @classmethod
-    def execute_query(cls, query_string, transaction=None, params=None, param_types=None):
+    def execute_query(cls, query_string, params=None, param_types=None, transaction=None):
         """
         Execute query string
 
@@ -29,9 +30,15 @@ class Executor:
         :rtype: StreamedResultSet
         :return: result set
         """
-        with Connection.get_instance().snapshot() as snapshot:
-            start_time = time()
-            response = snapshot.execute_sql(query_string, transaction, params, param_types)
+        start_time = time()
+        if transaction is None:
+            db_instance = Connection.get_instance()
+            with db_instance.snapshot() as snapshot:
+                response = snapshot.execute_sql(query_string, params, param_types)
+                logging.debug('Query completion Time: %s', (time() - start_time))
+                return response
+        else:
+            response = transaction.execute_sql(query_string, params, param_types)
             logging.debug('Query completion Time: %s', (time() - start_time))
             return response
 
@@ -43,9 +50,9 @@ class Executor:
         :type table_name: str
         :param table_name: database table name
 
-        :type columns: tuple
+        :type columns: list
         :param columns: table columns
-            eg. ('id', 'name')
+            eg. ['id', 'name']
 
         :type values: list
         :param values: row's data tuple list
@@ -54,16 +61,15 @@ class Executor:
         :type transaction: Transaction
         :param transaction:
         """
-
+        start_time = time()
         if transaction is None:
             db_instance = Connection.get_instance()
+            with db_instance.batch() as batch:
+                batch.insert(table=table_name, columns=columns, values=values)
         else:
-            db_instance = transaction
+            transaction.insert(table=table_name, columns=columns, values=values)
 
-        with db_instance.batch() as batch:
-            start_time = time()
-            batch.insert(table=table_name, columns=columns, values=values)
-            logging.debug('Query completion Time: %s', (time() - start_time))
+        logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def update_data(cls, table_name, columns, values, transaction=None):
@@ -73,9 +79,9 @@ class Executor:
         :type table_name: str
         :param table_name: database table name
 
-        :type columns: tuple
+        :type columns: list
         :param columns: table columns
-            eg. ('id', 'name')
+            eg. ['id', 'name']
 
         :type values: list
         :param values: row's data
@@ -85,15 +91,15 @@ class Executor:
         :param transaction:
         :return:
         """
+        start_time = time()
         if transaction is None:
             db_instance = Connection.get_instance()
+            with db_instance.batch() as batch:
+                batch.update(table=table_name, columns=columns, values=values)
         else:
-            db_instance = transaction
+            transaction.update(table=table_name, columns=columns, values=values)
 
-        with db_instance.batch() as batch:
-            start_time = time()
-            batch.update(table=table_name, columns=columns, values=values)
-            logging.debug('Query completion Time: %s', (time() - start_time))
+        logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def save_data(cls, table_name, columns, values, transaction=None):
@@ -103,9 +109,9 @@ class Executor:
         :type table_name: str
         :param table_name: database table name
 
-        :type columns: tuple
+        :type columns: list
         :param columns: table columns
-            eg. ('id', 'name')
+            eg. ['id', 'name']
 
         :type values: list
         :param values: row's data
@@ -114,15 +120,15 @@ class Executor:
         :type transaction: Transaction
         :param transaction:
         """
+        start_time = time()
         if transaction is None:
             db_instance = Connection.get_instance()
+            with db_instance.batch() as batch:
+                batch.insert_or_update(table=table_name, columns=columns, values=values)
         else:
-            db_instance = transaction
+            transaction.insert_or_update(table=table_name, columns=columns, values=values)
 
-        with db_instance.batch() as batch:
-            start_time = time()
-            batch.insert_or_update(table=table_name, columns=columns, values=values)
-            logging.debug('Query completion Time: %s', (time() - start_time))
+        logging.debug('Query completion Time: %s', (time() - start_time))
 
     @classmethod
     def delete_data(cls, table_name, id_list, transaction=None):
@@ -139,13 +145,13 @@ class Executor:
         :type transaction: Transaction
         :param transaction:
         """
+        start_time = time()
+        key_set = KeySet(keys=id_list, all_=False)
         if transaction is None:
             db_instance = Connection.get_instance()
+            with db_instance.batch() as batch:
+                batch.delete(table_name, key_set)
         else:
-            db_instance = transaction
+            transaction.delete(table_name, key_set)
 
-        key_set = KeySet(keys=id_list, all_=False)
-        with db_instance.batch() as batch:
-            start_time = time()
-            batch.delete(table_name, key_set)
-            logging.debug('Query completion Time: %s', (time() - start_time))
+        logging.debug('Query completion Time: %s', (time() - start_time))
