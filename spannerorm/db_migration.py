@@ -205,6 +205,7 @@ class DbMigration(object):
                 self.create_migration_table()
 
             migration_files = self.get_migration_files()
+            migration_files.sort()
             already_run_migration_names = self.get_already_run_migration_name()
             migration_run_count = 0
             for migration_file in migration_files:
