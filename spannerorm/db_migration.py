@@ -10,8 +10,6 @@ from datetime import datetime
 from .executor import Executor
 from .connection import Connection
 
-logging.basicConfig(level=logging.INFO)
-
 
 class DbMigration(object):
     instance_id = None
@@ -21,6 +19,7 @@ class DbMigration(object):
 
     @classmethod
     def run(cls):
+        logging.basicConfig(level=logging.INFO)
         if len(sys.argv) == 1:
             cls.help()
         else:
