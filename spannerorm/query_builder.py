@@ -358,6 +358,7 @@ class QueryBuilder:
         db_table = self.table_name
         where_clause = self._get_where_clause()
         join_clause = self._get_join_clause()
+        order_by_clause = self._get_order_by_clause()
 
         if where_clause != '':
             where_clause += ' AND {db_field} IN {in_clause}' \
@@ -366,9 +367,9 @@ class QueryBuilder:
             where_clause = 'WHERE {db_field} IN {in_clause}' \
                 .format(db_field=refer_db_field, in_clause=self._build_in_clause(in_values))
 
-        select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause}' \
+        select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause}' \
             .format(select_clause=multijoin_query.get('select_clause'), db_table=db_table,
-                    join_clause=join_clause, where_clause=where_clause)
+                    join_clause=join_clause, where_clause=where_clause, order_by_clause=order_by_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 
