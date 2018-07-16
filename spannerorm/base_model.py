@@ -196,6 +196,9 @@ class BaseModel(object):
             for row in result_sets:
                 join_on_values.append(getattr(row, relation_attr.join_on))
 
+            if len(join_on_values) == 0:
+                return []
+
             query_string = query_builder.get_multijoin_query(relation_name, join_on_values)
             join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
                                                   transaction=transaction)
