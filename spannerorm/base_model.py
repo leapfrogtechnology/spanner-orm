@@ -549,7 +549,7 @@ class BaseModel(object):
         return prepare_data.get('model_list')
 
     @classmethod
-    def update_by_pk(cls, pk, data):
+    def update_by_pk(cls, pk, data, transaction=None):
         """
         Update model by primary key
 
@@ -559,6 +559,9 @@ class BaseModel(object):
         :type data: dict
         :param data: data to update
 
+        :type transaction: Transaction
+        :param transaction:
+
         :rtype: BaseModel
         :return: updated model object
         """
@@ -567,7 +570,7 @@ class BaseModel(object):
             raise AssertionError('Record not exist with primary key : {}'.format(pk))
 
         model_object.set_props(data)
-        return cls.save(model_object)
+        return cls.save(model_object, transaction=transaction)
 
     @classmethod
     def relations(cls):
