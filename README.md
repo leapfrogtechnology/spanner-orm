@@ -13,8 +13,10 @@ product:
 ## Features
 - A small, simple ORM
 - Support Cloud Spanner Database
-- python 2.7+ (Not tested yet in python 3+)
+- python 2.7 - 3.6
 - Connection pooling
+- Support DB Transaction
+- Support DB Migration
 
 ## Table of contents
 <!--ts-->
