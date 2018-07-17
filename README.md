@@ -27,9 +27,54 @@ product:
     * [Meta](#meta)
     * [Model Decorator](#model-decorator)
 * [Query Records](#query-records)
-    * [find(criteria)](#findcriteria)
-    * [find_by_pk(pk, criteria)](#find_by_pkpk-criteria)
-    * [find_all(criteria)](#find_allcriteria)
+    * [count(criteria, transaction)](#countcriteria-transaction)
+    * [find(criteria, transaction)](#findcriteria-transaction)
+    * [find_by_pk(pk, criteria, transaction)](#find_by_pkpk-criteria-transaction)
+    * [find_all(criteria, transaction)](#find_allcriteria-transaction)
+        * [Criteria](#criteria)
+            * [criteria.condition(conditions, operator)](#criteriaconditionconditions-operator)
+            * [criteria.add_condition(condition, operator)](#criteriaadd_conditioncondition-operator)
+                * [Criteria condition](#criteria-condition)
+                * [Criteria Condition Operators](#criteria-condition-operators)
+            * [criteria.limit](#criterialimit)
+            * [criteria.offset](#criteriaoffset)
+            * [criteria.set_order_by(order_by_props, order)](#criteriaset_order_byorder_by_props-order)
+            * [criteria.oin_with(relation, join_type)](#criteriaoin_withrelation-join_type)
+* [Block Records INSERT | UPDATE](#block-records-insert--update)
+    * [insert_block(raw_data_list, transaction)](#insert_blockraw_data_list-transaction)
+    * [update_block(cls, raw_data_list, transaction)](#update_blockcls-raw_data_list-transaction)
+* [Save Record (ADD / UPDATE)](#save-record-add--update)
+    * [save(model_obj, transaction)](#savemodel_obj-transaction)
+    * [save_all(model_obj_list, transaction)](#save_allmodel_obj_list-transaction)
+    * [update_by_pk(pk, data, transaction)](#update_by_pkpk-data-transaction)
+* [Delete Records](#delete-records)
+    * [delete_one(criteria, transaction)](#delete_onecriteria-transaction)
+    * [delete_by_pk(pk, transaction)](#delete_by_pkpk-transaction)
+* [Running with Transaction](#running-with-transaction)
+* [Model object functions](#model-object-functions)
+    * [set_props(raw_data)](#set_propsraw_data)
+    * [equals(obj)](#equalsobj)
+    * [is_new_record()](#is_new_record)
+    * [get_pk_value()](#get_pk_value)
+    * [get_errors()](#get_errors)
+    * [validate()](#validate)
+    * [validate_property(prop)](#validate_propertyprop)
+* [Model class functions](#model-class-functions)
+    * [get_meta_data()](#get_meta_data)
+    * [primary_key_property()](#primary_key_property)
+    * [has_property(property_name)](#has_propertyproperty_name)
+* [SpannerDb](#spannerdb)
+    * [SpannerDb.execute_query(query_string, params, transaction)](#spannerdbexecute_queryquery_string-params-transaction)
+    * [SpannerDb.execute_ddl_query(ddl_query_string)](#spannerdbexecute_ddl_queryddl_query_string)
+    * [SpannerDb.insert_data(table_name, columns, data)](#spannerdbinsert_datatable_name-columns-data)
+    * [SpannerDb.update_data(table_name, columns, data)](#spannerdbupdate_datatable_name-columns-data)
+    * [SpannerDb.save_data(table_name, columns, data)](#spannerdbsave_datatable_name-columns-data)
+    * [SpannerDb.delete_data(table_name, id_list)](#spannerdbdelete_datatable_name-id_list)
+* [Database Migration](#database-migration)
+    * [setup Db Migration](#setup-db-migration)
+    * [Db Migration commands](#db-migration-commands)
+        
+    
 <!--te-->
 
 ## Installation
@@ -409,7 +454,7 @@ Model-specific configuration is placed in a special class called `Meta`. Meta Cl
 ## Query Records
 Model query records public methods
 
-#### count(criteria, transaction)
+### count(criteria, transaction)
 Count record filter by criteria
 ```markdown
 - params:
@@ -435,7 +480,7 @@ criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '47071
 user = User.count(criteria)
 ```
 
-#### find(criteria, transaction)
+### find(criteria, transaction)
 Fetch single record data filter by criteria
 ```markdown
 - params:
@@ -468,7 +513,7 @@ criteria.join_with(User.role)
 user = User.find()
 user_role = user.role
 ```
-#### find_by_pk(pk, criteria, transaction)
+### find_by_pk(pk, criteria, transaction)
 Fetch record by primary key filter by criteria
 ```markdown
 - params:
@@ -498,7 +543,7 @@ criteria.add_condition((User.is_deleted, '=', False))
 user = User.find_by_pk('-300113230644022007', criteria)
 ```
 
-#### find_all(criteria, transaction)
+### find_all(criteria, transaction)
 Fetch records filter by criteria
 ```markdown
 - params:
@@ -557,10 +602,10 @@ for user in users:
     print(user)
 ```
 
-### Criteria
+#### Criteria
 `Criteria` object represents a query filter criteria, such as conditions, ordering by, limit/offset. 
 
-#### criteria.condition(conditions, operator)
+##### criteria.condition(conditions, operator)
 Set criteria condition that filter result set
 ```markdown
 - params:
@@ -601,7 +646,7 @@ criteria.condition([(((User.name, 'LIKE', '%lf%'), 'AND', ((User.active, '=', Tr
 
 ```
 
-#### criteria.add_condition(condition, operator)
+##### criteria.add_condition(condition, operator)
 Add criteria condition that filter result set
 ```markdown
 - params:
@@ -638,7 +683,7 @@ criteria.add_condition((User.name, 'LIKE', '%lf%'))
 criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', True)))
 ```
 
-##### Criteria condition
+###### Criteria condition
 Criteria `condition` object provide filter cirteria.
 ```markdown
 - Type: tuple(3)
@@ -647,7 +692,7 @@ Criteria `condition` object provide filter cirteria.
 
 ```
 
-##### Criteria Condition Operators
+###### Criteria Condition Operators
 | Operator  | Description                            |  Example                                                             |
 | --------- | ---------------------------------------| -------------------------------------------------------------------- |
 | =        | Equal                                   | (User.name, '=', 'sanish')                                           |
@@ -663,13 +708,13 @@ Criteria `condition` object provide filter cirteria.
 | OR       | Join two condition with `OR` operator   | ((User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False))  |
 
 
-#### criteria.limit
+##### criteria.limit
 Setter limit criteria
 ```markdown
 - Type: int
 ```
 
-### criteria.offset
+##### criteria.offset
 Setter offset criteria
 ```markdown
 - Type: int
@@ -683,7 +728,7 @@ criteria.limit = 5
 criteria.offset = 10
 ```
 
-#### criteria.set_order_by(order_by_props, order)
+##### criteria.set_order_by(order_by_props, order)
 Set order by criteria
 ```markdown
 - params:
@@ -712,7 +757,7 @@ criteria = Criteria()
 criteria.set_order_by([User.name, User.email])
 ```
 
-#### criteria.oin_with(relation, join_type)
+##### criteria.oin_with(relation, join_type)
 - Add join with criteria. For joining should define relation in model
 `````markdown
 - params:
