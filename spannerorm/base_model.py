@@ -149,7 +149,7 @@ class BaseModel(object):
         return cls.__dict__.get('Meta')
 
     @classmethod
-    def _fetch_query(cls, query_string, query_builder, transaction=None):
+    def _fetch_query(cls, query_builder, transaction=None):
         """
         Fetch data from query string
 
@@ -165,6 +165,13 @@ class BaseModel(object):
         :rtype: list
         :return: model list of result set
         """
+        ids = None
+        if query_builder.with_multi_joins:
+            key_results = Executor.execute_query(query_builder.get_primary_keys(), query_builder.params, query_builder.param_types,
+                                         transaction=transaction)
+            ids = [row[0] for row in key_results]
+
+        query_string = query_builder.get_query(ids)
         results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
                                          transaction=transaction)
         result_sets = DataParser.map_model(results, query_builder.select_cols, cls)
@@ -186,11 +193,11 @@ class BaseModel(object):
         :type result_sets: list
         :param result_sets: model list result set
         """
-        for relation_name in query_builder.multijoin_queries:
-            multijoin_query = query_builder.multijoin_queries.get(relation_name)
-            relation_prop = multijoin_query.get('relation_prop')
+        for relation_name in query_builder.multi_joins:
+            multi_join = query_builder.multi_joins.get(relation_name)
+            relation_prop = multi_join.get('relation_prop')
             relation_attr = Helper.model_relational_attr_by_prop(cls, relation_prop)
-            refer_to_model = multijoin_query.get('refer_to_model')
+            refer_to_model = multi_join.get('refer_to_model')
 
             join_on_values = []
             for row in result_sets:
@@ -199,10 +206,10 @@ class BaseModel(object):
             if len(join_on_values) == 0:
                 return []
 
-            query_string = query_builder.get_multijoin_query(relation_name, join_on_values)
+            query_string = query_builder.get_multi_join_query(relation_name, join_on_values)
             join_results = Executor.execute_query(query_string, query_builder.params, query_builder.param_types,
                                                   transaction=transaction)
-            join_result_sets = DataParser.map_model(join_results, multijoin_query.get('select_cols'), refer_to_model)
+            join_result_sets = DataParser.map_model(join_results, multi_join.get('select_cols'), refer_to_model)
 
             DataParser.map_multi_join_model(result_sets, join_result_sets, relation_name, relation_attr.join_on,
                                             relation_attr.refer_to)
@@ -402,8 +409,7 @@ class BaseModel(object):
 
         criteria.limit = 1
         query_builder = QueryBuilder(cls, criteria)
-        query_string = query_builder.get_query()
-        results = cls._fetch_query(query_string, query_builder, transaction)
+        results = cls._fetch_query(query_builder, transaction)
 
         if len(results) == 1:
             return results[0]
@@ -434,8 +440,7 @@ class BaseModel(object):
         criteria.add_condition((cls.primary_key_property(), '=', pk))
 
         query_builder = QueryBuilder(cls, criteria)
-        query_string = query_builder.get_query()
-        results = cls._fetch_query(query_string, query_builder, transaction)
+        results = cls._fetch_query(query_builder, transaction)
 
         if len(results) == 1:
             return results[0]
@@ -460,9 +465,7 @@ class BaseModel(object):
             criteria = Criteria()
 
         query_builder = QueryBuilder(cls, criteria)
-        query_string = query_builder.get_query()
-
-        return cls._fetch_query(query_string, query_builder, transaction)
+        return cls._fetch_query(query_builder, transaction)
 
     @classmethod
     def insert_block(cls, raw_data_list, transaction=None):

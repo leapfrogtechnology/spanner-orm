@@ -24,8 +24,27 @@ class QueryBuilder:
         self.params_count = 0
         self.params = {}
         self.param_types = {}
-        self.join_with = {}
-        self.multijoin_queries = {}
+        self.with_multi_joins = False
+        self.multi_joins = {}
+        self.set_multi_joins()
+
+    def set_multi_joins(self):
+        """
+        Set multi joins data
+        """
+        join_relations = self.criteria.join_relations
+        for join in join_relations:
+            join_relation = join.get('relation')
+            join_attr = Helper.model_relational_attr_by_prop(self.model_class, join_relation)
+            if Helper.is_relational_attr(join_attr) is False:
+                raise TypeError('Invalid join with criteria')
+
+            refer_model = Relation.get_refer_model(self.model_class, join_attr.relation_name)
+
+            if join_attr.relation_type == 'OneToMany' or join_attr.relation_type == 'ManyToMany':
+                self.with_multi_joins = True
+                self._set_multi_join_select_clause(refer_model, join_attr.relation_name)
+                self._set_multi_join_data(join_attr.relation_name)
 
     def _get_select_clause(self):
         """
@@ -63,9 +82,6 @@ class QueryBuilder:
                     join_select_clause += self._get_model_select_clause(refer_model)
                 else:
                     join_select_clause += ', ' + self._get_model_select_clause(refer_model)
-            else:
-                # Todo handle OneToMany & ManyToMany
-                self._set_multijoin_select_clause(refer_model, join_attr.relation_name)
 
         return join_select_clause
 
@@ -278,7 +294,7 @@ class QueryBuilder:
 
         return join_clause
 
-    def _set_multijoin_select_clause(self, model_cls, relation_name):
+    def _set_multi_join_select_clause(self, model_cls, relation_name):
         """
         set OnToMany or ManyToMany Join select clause
 
@@ -301,14 +317,14 @@ class QueryBuilder:
             else:
                 sub_select_clause += ', ' + select_column
 
-        if relation_name not in self.multijoin_queries:
-            self.multijoin_queries[relation_name] = {}
+        if relation_name not in self.multi_joins:
+            self.multi_joins[relation_name] = {}
 
-        multijoin_query = self.multijoin_queries.get(relation_name)
-        multijoin_query['select_cols'] = select_cols
-        multijoin_query['select_clause'] = sub_select_clause
+        multi_join = self.multi_joins.get(relation_name)
+        multi_join['select_cols'] = select_cols
+        multi_join['select_clause'] = sub_select_clause
 
-    def _set_multijoin_query_data(self, relation_name, db_table, join_clause, where_clause):
+    def _set_multi_join_data(self, relation_name):
         """
         Set join sub query data
 
@@ -328,14 +344,14 @@ class QueryBuilder:
         refer_to_model = relations.get(relation_name)
         relation_prop = Helper.get_model_prop_by_name(self.model_class, relation_name)
 
-        if relation_name not in self.multijoin_queries:
-            self.multijoin_queries[relation_name] = {}
+        if relation_name not in self.multi_joins:
+            self.multi_joins[relation_name] = {}
 
-        multijoin_query = self.multijoin_queries.get(relation_name)
-        multijoin_query['refer_to_model'] = refer_to_model
-        multijoin_query['relation_prop'] = relation_prop
+        multi_join = self.multi_joins.get(relation_name)
+        multi_join['refer_to_model'] = refer_to_model
+        multi_join['relation_prop'] = relation_prop
 
-    def get_query(self):
+    def get_query(self, in_ids=None):
         """
         Build query base on criteria and return query string
 
@@ -347,10 +363,15 @@ class QueryBuilder:
         join_clause = self._get_join_clause()
         where_clause = self._get_where_clause()
         order_by_clause = self._get_order_by_clause()
-        limit_clause = self._get_limit_clause()
-
-        for relation_name in self.multijoin_queries:
-            self._set_multijoin_query_data(relation_name, db_table, join_clause, where_clause)
+        limit_clause = self._get_limit_clause() if self.with_multi_joins is False else ''
+        if in_ids:
+            primary_key = self.meta.primary_key
+            if where_clause != '':
+                where_clause += ' AND {db_table}.{primary_key} IN {in_clause}' \
+                    .format(db_table=db_table, primary_key=primary_key, in_clause=self._build_in_clause(in_ids))
+            else:
+                where_clause = 'WHERE {db_table}.{primary_key} IN {in_clause}' \
+                    .format(db_table=db_table, primary_key=primary_key, in_clause=self._build_in_clause(in_ids))
 
         select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
             .format(select_clause=select_clause, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
@@ -358,11 +379,11 @@ class QueryBuilder:
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
 
-    def get_multijoin_query(self, relation_name, in_values):
-        multijoin_query = self.multijoin_queries.get(relation_name)
-        relation_prop = multijoin_query.get('relation_prop')
+    def get_multi_join_query(self, relation_name, in_values):
+        multi_join = self.multi_joins.get(relation_name)
+        relation_prop = multi_join.get('relation_prop')
         relation_attr = Helper.model_relational_attr_by_prop(self.model_class, relation_prop)
-        refer_to_model = multijoin_query.get('refer_to_model')
+        refer_to_model = multi_join.get('refer_to_model')
         refer_to_attr = Helper.model_attr_by_prop_name(refer_to_model, relation_attr.refer_to)
         refer_table_name = refer_to_model._meta().db_table
         refer_db_field = refer_table_name + '.' + refer_to_attr.db_column
@@ -379,7 +400,7 @@ class QueryBuilder:
                 .format(db_field=refer_db_field, in_clause=self._build_in_clause(in_values))
 
         select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause}' \
-            .format(select_clause=multijoin_query.get('select_clause'), db_table=db_table,
+            .format(select_clause=multi_join.get('select_clause'), db_table=db_table,
                     join_clause=join_clause, where_clause=where_clause, order_by_clause=order_by_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_query, self.params, self.param_types)
         return select_query
@@ -411,11 +432,14 @@ class QueryBuilder:
         """
         primary_key = self.meta.primary_key
         db_table = self.table_name
+        join_clause = self._get_join_clause()
         where_clause = self._get_where_clause()
+        order_by_clause = self._get_order_by_clause()
         limit_clause = self._get_limit_clause()
 
-        select_primary_key_query = 'SELECT {primary_key} FROM {db_table} {where_clause} {limit_clause}' \
-            .format(primary_key=primary_key, db_table=db_table, where_clause=where_clause, limit_clause=limit_clause)
+        select_primary_key_query = 'SELECT DISTINCT({db_table}.{primary_key}) FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
+            .format(primary_key=primary_key, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
+                    order_by_clause=order_by_clause, limit_clause=limit_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_primary_key_query, self.params,
                       self.param_types)
         return select_primary_key_query
