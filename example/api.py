@@ -65,6 +65,7 @@ def user_by_pk():
 @app.route('/user/find_all')
 def find_all_users():
     criteria = Criteria()
+    criteria.join_with(User.role)
     criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
     # criteria.add_condition((User.role_id, 'IN', ['1', '2']))
     # criteria.add_condition((User.organization_id, 'NOT IN', ['4707145032222247178']))
@@ -234,6 +235,16 @@ def drop_table():
                     '''
     SpannerDb.execute_ddl_query(query_string)
     return 'success'
+
+@app.route('/roles')
+def roles():
+    criteria = Criteria()
+    #criteria.join_with((Role.users))
+
+    criteria.limit = 2
+    roles = Role.find_all(criteria)
+
+    return jsonify(roles)
 
 
 if __name__ == '__main__':
