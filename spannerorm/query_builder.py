@@ -434,12 +434,11 @@ class QueryBuilder:
         db_table = self.table_name
         join_clause = self._get_join_clause()
         where_clause = self._get_where_clause()
-        order_by_clause = self._get_order_by_clause()
         limit_clause = self._get_limit_clause()
 
-        select_primary_key_query = 'SELECT DISTINCT({db_table}.{primary_key}) FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
+        select_primary_key_query = 'SELECT DISTINCT({db_table}.{primary_key}) FROM {db_table} {join_clause} {where_clause} {limit_clause}' \
             .format(primary_key=primary_key, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
-                    order_by_clause=order_by_clause, limit_clause=limit_clause)
+                    limit_clause=limit_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_primary_key_query, self.params,
                       self.param_types)
         return select_primary_key_query
