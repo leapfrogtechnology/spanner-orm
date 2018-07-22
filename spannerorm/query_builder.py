@@ -103,13 +103,13 @@ class QueryBuilder:
         if self.criteria.limit is None:
             return ''
 
-        limit_clause = 'LIMIT ' + str(self.criteria.limit)
+        limit_clause = 'LIMIT {limit}'.format(limit=str(self.criteria.limit))
         if self.criteria.offset:
-            limit_clause += ' OFFSET ' + str(self.criteria.offset)
+            limit_clause += ' OFFSET {offset}'.format(offset=str(self.criteria.offset))
 
         return limit_clause
 
-    def _parse_condition(self, condition_list):
+    def _parse_condition(self, condition_list, condition_type='AND'):
         """
         Parse condition
 
@@ -124,8 +124,11 @@ class QueryBuilder:
         for condition in condition_list:
             if isinstance(condition, dict):
                 sub_where_clause = self._build_where_clause(condition)
-                if sub_where_clause != '':
-                    where_clause += '(' + self._build_where_clause(condition) + ')'
+                if where_clause != '':
+                    where_clause += ' {condition_type} ({sub_where_clause})'.format(condition_type=condition_type,
+                                                                                    sub_where_clause=sub_where_clause)
+                else:
+                    where_clause = sub_where_clause
             else:
                 self.params_count += 1
                 prop = condition[0]
@@ -136,16 +139,24 @@ class QueryBuilder:
                 operator = condition[1]
                 param = 'param' + str(self.params_count)
 
-                if where_clause != '':
-                    where_clause += ' AND '
-
                 if operator != 'IN' and operator != 'NOT IN':
-                    where_clause += db_field + ' ' + operator + ' @' + param
+                    if where_clause != '':
+                        where_clause += ' {condition_type} {db_field} {operator} @{param}' \
+                            .format(condition_type=condition_type, db_field=db_field, operator=operator, param=param)
+                    else:
+                        where_clause += '{db_field} {operator} @{param}' \
+                            .format(db_field=db_field, operator=operator, param=param)
 
                     self.params[param] = condition[2]
                     self.param_types[param] = attr.data_type
                 else:
-                    where_clause += db_field + ' ' + operator + ' ' + self._build_in_clause(condition[2])
+                    if where_clause != '':
+                        where_clause += ' {condition_type} {db_field} {operator} {in_clause}' \
+                            .format(condition_type=condition_type, db_field=db_field, operator=operator,
+                                    in_clause=self._build_in_clause(condition[2]))
+                    else:
+                        where_clause += '{db_field} {operator} {in_clause}' \
+                            .format(db_field=db_field, operator=operator, in_clause=self._build_in_clause(condition[2]))
 
         return where_clause
 
@@ -206,11 +217,10 @@ class QueryBuilder:
         :rtype: str
         :return: where clause
         """
-        and_clause = self._parse_condition(where_conditions.get('and_conditions'))
-        or_clause = self._parse_condition(where_conditions.get('or_conditions'))
-
+        and_clause = self._parse_condition(where_conditions.get('and_conditions'), 'AND')
+        or_clause = self._parse_condition(where_conditions.get('or_conditions'), 'OR')
         if and_clause != '' and or_clause != '':
-            return '(' + and_clause + ') OR (' + or_clause + ')'
+            return '{and_clause} OR {or_clause}'.format(and_clause=and_clause, or_clause=or_clause)
         elif and_clause != '' and or_clause == '':
             return and_clause
         elif and_clause == '' and or_clause != '':
@@ -239,7 +249,8 @@ class QueryBuilder:
                 order_by_clause += ', ' + table_name + '.' + attr.db_column
 
         if order_by_clause != '':
-            return 'ORDER BY ' + order_by_clause + ' ' + order_by.get('order')
+            return 'ORDER BY {order_by_clause} {order_by}'.format(order_by_clause=order_by_clause,
+                                                                  order_by=order_by.get('order'))
         else:
             return ''
 

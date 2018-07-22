@@ -13,8 +13,10 @@ product:
 ## Features
 - A small, simple ORM
 - Support Cloud Spanner Database
-- python 2.7+ (Not tested yet in python 3+)
+- python 2.7 - 3.6
 - Connection pooling
+- Support DB Transaction
+- Support DB Migration
 
 ## Table of contents
 <!--ts-->
@@ -27,9 +29,54 @@ product:
     * [Meta](#meta)
     * [Model Decorator](#model-decorator)
 * [Query Records](#query-records)
-    * [find(criteria)](#findcriteria)
-    * [find_by_pk(pk, criteria)](#find_by_pkpk-criteria)
-    * [find_all(criteria)](#find_allcriteria)
+    * [count(criteria, transaction)](#countcriteria-transaction)
+    * [find(criteria, transaction)](#findcriteria-transaction)
+    * [find_by_pk(pk, criteria, transaction)](#find_by_pkpk-criteria-transaction)
+    * [find_all(criteria, transaction)](#find_allcriteria-transaction)
+        * [Criteria](#criteria)
+            * [criteria.condition(conditions, operator)](#criteriaconditionconditions-operator)
+            * [criteria.add_condition(condition, operator)](#criteriaadd_conditioncondition-operator)
+                * [Criteria condition](#criteria-condition)
+                * [Criteria Condition Operators](#criteria-condition-operators)
+            * [criteria.limit](#criterialimit)
+            * [criteria.offset](#criteriaoffset)
+            * [criteria.set_order_by(order_by_props, order)](#criteriaset_order_byorder_by_props-order)
+            * [criteria.oin_with(relation, join_type)](#criteriaoin_withrelation-join_type)
+* [Block Records INSERT | UPDATE](#block-records-insert--update)
+    * [insert_block(raw_data_list, transaction)](#insert_blockraw_data_list-transaction)
+    * [update_block(cls, raw_data_list, transaction)](#update_blockcls-raw_data_list-transaction)
+* [Save Record (ADD / UPDATE)](#save-record-add--update)
+    * [save(model_obj, transaction)](#savemodel_obj-transaction)
+    * [save_all(model_obj_list, transaction)](#save_allmodel_obj_list-transaction)
+    * [update_by_pk(pk, data, transaction)](#update_by_pkpk-data-transaction)
+* [Delete Records](#delete-records)
+    * [delete_one(criteria, transaction)](#delete_onecriteria-transaction)
+    * [delete_by_pk(pk, transaction)](#delete_by_pkpk-transaction)
+* [Running with Transaction](#running-with-transaction)
+* [Model object functions](#model-object-functions)
+    * [set_props(raw_data)](#set_propsraw_data)
+    * [equals(obj)](#equalsobj)
+    * [is_new_record()](#is_new_record)
+    * [get_pk_value()](#get_pk_value)
+    * [get_errors()](#get_errors)
+    * [validate()](#validate)
+    * [validate_property(prop)](#validate_propertyprop)
+* [Model class functions](#model-class-functions)
+    * [get_meta_data()](#get_meta_data)
+    * [primary_key_property()](#primary_key_property)
+    * [has_property(property_name)](#has_propertyproperty_name)
+* [SpannerDb](#spannerdb)
+    * [SpannerDb.execute_query(query_string, params, transaction)](#spannerdbexecute_queryquery_string-params-transaction)
+    * [SpannerDb.execute_ddl_query(ddl_query_string)](#spannerdbexecute_ddl_queryddl_query_string)
+    * [SpannerDb.insert_data(table_name, columns, data)](#spannerdbinsert_datatable_name-columns-data)
+    * [SpannerDb.update_data(table_name, columns, data)](#spannerdbupdate_datatable_name-columns-data)
+    * [SpannerDb.save_data(table_name, columns, data)](#spannerdbsave_datatable_name-columns-data)
+    * [SpannerDb.delete_data(table_name, id_list)](#spannerdbdelete_datatable_name-id_list)
+* [Database Migration](#database-migration)
+    * [setup Db Migration](#setup-db-migration)
+    * [Db Migration commands](#db-migration-commands)
+        
+    
 <!--te-->
 
 ## Installation
@@ -409,7 +456,33 @@ Model-specific configuration is placed in a special class called `Meta`. Meta Cl
 ## Query Records
 Model query records public methods
 
-#### find(criteria)
+### count(criteria, transaction)
+Count record filter by criteria
+```markdown
+- params:
+    - criteria:
+        - Filter criteria
+        - Type: Criteria
+        - Default Value: None
+        - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
+- return:
+    - Count of record
+    - Type: bool
+```
+
+eg: With out join
+```python
+criteria = Criteria()
+criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '4707145032222247178')])
+user = User.count(criteria)
+```
+
+### find(criteria, transaction)
 Fetch single record data filter by criteria
 ```markdown
 - params:
@@ -417,6 +490,11 @@ Fetch single record data filter by criteria
         - Filter criteria
         - Type: Criteria
         - Default Value: None
+        - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
         - Optional
 - return:
     - If exist return Model object else None
@@ -437,7 +515,7 @@ criteria.join_with(User.role)
 user = User.find()
 user_role = user.role
 ```
-#### find_by_pk(pk, criteria)
+### find_by_pk(pk, criteria, transaction)
 Fetch record by primary key filter by criteria
 ```markdown
 - params:
@@ -449,6 +527,11 @@ Fetch record by primary key filter by criteria
         - Filter criteria
         - Type: Criteria
         - Default Value: None
+        - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
         - Optional
 - return:
     - If exist return Model object else None
@@ -462,7 +545,7 @@ criteria.add_condition((User.is_deleted, '=', False))
 user = User.find_by_pk('-300113230644022007', criteria)
 ```
 
-#### find_all(criteria)
+### find_all(criteria, transaction)
 Fetch records filter by criteria
 ```markdown
 - params:
@@ -470,6 +553,11 @@ Fetch records filter by criteria
         - Filter criteria
         - Type: Criteria
         - Default Value: None
+        - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
         - Optional
 - return:
     - list of model
@@ -516,10 +604,10 @@ for user in users:
     print(user)
 ```
 
-### Criteria
+#### Criteria
 `Criteria` object represents a query filter criteria, such as conditions, ordering by, limit/offset. 
 
-#### criteria.condition(conditions, operator)
+##### criteria.condition(conditions, operator)
 Set criteria condition that filter result set
 ```markdown
 - params:
@@ -560,7 +648,7 @@ criteria.condition([(((User.name, 'LIKE', '%lf%'), 'AND', ((User.active, '=', Tr
 
 ```
 
-#### criteria.add_condition(condition, operator)
+##### criteria.add_condition(condition, operator)
 Add criteria condition that filter result set
 ```markdown
 - params:
@@ -597,7 +685,7 @@ criteria.add_condition((User.name, 'LIKE', '%lf%'))
 criteria.add_condition(((User.active, '=', False), 'OR', (User.is_deleted, '=', True)))
 ```
 
-##### Criteria condition
+###### Criteria condition
 Criteria `condition` object provide filter cirteria.
 ```markdown
 - Type: tuple(3)
@@ -605,7 +693,7 @@ Criteria `condition` object provide filter cirteria.
           (condition, [AND | OR], condition)
 ```
 
-##### Criteria Condition Operators
+###### Criteria Condition Operators
 | Operator  | Description                            |  Example                                                             |
 | --------- | ---------------------------------------| -------------------------------------------------------------------- |
 | =        | Equal                                   | (User.name, '=', 'sanish')                                           |
@@ -621,13 +709,13 @@ Criteria `condition` object provide filter cirteria.
 | OR       | Join two condition with `OR` operator   | ((User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False))  |
 
 
-#### criteria.limit
+##### criteria.limit
 Setter limit criteria
 ```markdown
 - Type: int
 ```
 
-### criteria.offset
+##### criteria.offset
 Setter offset criteria
 ```markdown
 - Type: int
@@ -641,7 +729,7 @@ criteria.limit = 5
 criteria.offset = 10
 ```
 
-#### criteria.set_order_by(order_by_props, order)
+##### criteria.set_order_by(order_by_props, order)
 Set order by criteria
 ```markdown
 - params:
@@ -670,7 +758,7 @@ criteria = Criteria()
 criteria.set_order_by([User.name, User.email])
 ```
 
-#### criteria.oin_with(relation, join_type)
+##### criteria.oin_with(relation, join_type)
 - Add join with criteria. For joining should define relation in model
 `````markdown
 - params:
@@ -697,14 +785,19 @@ criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
 ## Block Records INSERT | UPDATE
 Model Block function allow insert/update lots of data quickly. 
 
-### insert_block(raw_data_list)
+### insert_block(raw_data_list, transaction)
 Insert block of data
 ```markdown
 - params:
     - raw_data_list:
         - List of data
-        - Type: list of disct 
+        - Type: list of dict 
         - Require
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 ```
 
 eg:
@@ -729,14 +822,19 @@ eg:
 ```
 
 
-### update_block(cls, raw_data_list)
+### update_block(cls, raw_data_list, transaction)
 Update block of data
 ```markdown
 - params:
     - raw_data_list:
         - List of data
-        - Type: list of disct 
+        - Type: list of dict 
         - Require
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 ```
 
 eg:
@@ -757,7 +855,7 @@ eg:
 ## Save Record (ADD / UPDATE)
 Model function provide ability to save model object.
 
-### save(model_obj)
+### save(model_obj, transaction)
 Add/Update model data to database
 ```markdown
 - params:
@@ -765,6 +863,11 @@ Add/Update model data to database
         - Model object
         - Type: Model
         - Require 
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return:
     - Saved or updated  model
     - Type: Model
@@ -781,7 +884,7 @@ user.role_id = '1'
 user = User.save(user)
 ```
 
-### save_all(model_obj_list)
+### save_all(model_obj_list, transaction)
 Add / Update list of model to database
 ```markdown
 - params:
@@ -789,6 +892,11 @@ Add / Update list of model to database
         - list of model objects
         - Type: list
         - Require
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return: 
     - list of model
 ```
@@ -806,7 +914,7 @@ users.append(user)
 user = User.save_all(users)
 ```
 
-### update_by_pk(pk, data)
+### update_by_pk(pk, data, transaction)
 Update by primary key of model to database
 
 ```markdown
@@ -819,6 +927,11 @@ Update by primary key of model to database
         - Data to update
         - Type: dict
         - Require
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return: 
     - model object
 ```
@@ -826,7 +939,7 @@ Update by primary key of model to database
 ## Delete Records
 Model delete function allow delete records from database
 
-### delete_one(criteria)
+### delete_one(criteria, transaction)
 Delete single record that match with criteria
 
 ```markdown
@@ -836,10 +949,15 @@ Delete single record that match with criteria
         - Type: Criteria
         - Default Value: None
         - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return: True on success else throw exception
 ```
 
-### delete_by_pk(pk)
+### delete_by_pk(pk, transaction)
 Delete record by primary key
 ```markdown
 - params:
@@ -847,10 +965,15 @@ Delete record by primary key
         - Primary key value
         - Type: int | str (base on primary key type)
         - Require
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return: True on success else throw exception
 ```
 
-### delete_all(criteria)
+### delete_all(criteria, transaction)
 Delete all records that match with criteria
 ```markdown
 - params:
@@ -859,19 +982,309 @@ Delete all records that match with criteria
         - Type: Criteria
         - Default Value: None
         - Optional
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
 - return: True on success else throw exception
 ```
 
-## Model object functions
-### equals(obj)
-### is_new_record()
-### get_pk_value()
-### get_errors()
-### validate()
-### validate_property(prop)
+## Running with Transaction
+Spanner-ORM provide @transactional decoration to support transaction
+eg:
+```python
+@transactional
+def with_transaction(transaction):
+    """
+    :type transaction: Transaction
+    :param transaction: provide automatically by @transactional 
+    """
+    role = Role()
+    role.name = 'guest'
+    role.save(role, transaction)
+    
+    user = User()
+    user.name = 'person 10'
+    user.email = 'transaction@gmail.com'
+    user.role_id = role.id
 
+    user = User.save(user, transaction)
+```
+
+## Model object functions
+Spanner-ORM provide some basic model instance functions
+### set_props(raw_data):
+Set model properties
+```markdown
+- params: 
+    - raw_data
+        - Model properties values in prop-value pairs
+        - Type : dict
+        - Required
+```
+
+eg:
+```python
+user = User()
+user.set_props({
+    'name' : 'Sanish',
+    'address' : 'Nepal'
+})
+
+```
+
+### equals(obj)
+Compare two model object is equals or not
+```markdown
+- params: 
+    obj:
+        - Model object that need to compare
+        - Type : Model
+        - Required
+- return: 
+    - True if both are same Model instance with equals values else return return False
+    - Type: bool
+```
+
+### is_new_record()
+Check is new record model instance or existing record model instance
+```markdown
+- return:
+    - Is new record or not
+    - Type: bool
+```
+
+### get_pk_value()
+```markdown
+- return:
+    - primary key value
+    - Type: int | str base on primary key data type
+```
+
+### get_errors()
+```markdown
+- return:
+    - Model instance validation errors
+    - Type: dict
+```
+eg:
+```python
+    user = User()
+    user.email = 'someone@gmail.com'
+    user.role_id = '1'
+    
+    if not user.validate():
+        errors = user.get_errors()
+```
+### validate()
+```markdown
+- return:
+    - Check model instance data valid or not
+    - Type: bool
+```
+eg:
+```python
+    user = User()
+    user.email = 'someone@gmail.com'
+    user.role_id = '1'
+    
+    if not user.validate():
+        errors = user.get_errors()
+```
+### validate_property(prop)
+```markdown
+- return:
+    - Check model instance property data is valid or not
+    - Type: dict 
+            {'is_valid':bool, 'error_msg':str}
+```
 
 ## Model class functions
+Spanner-ORM provide some basic Model class functions
+
 ### get_meta_data()
+```markdown
+- return:
+    - Return model mata data information
+    - Type: dict
+
+```
+
 ### primary_key_property()
+```markdown
+- return:
+    - Primary key name
+    - Type: str
+```
 ### has_property(property_name)
+```markdown
+- return:
+    - Check model has property by name, if exist return True else False
+    - Type: bool
+```
+
+## SpannerDb
+`SpannerDb` class provide some direct methods to run native and direct db operations. 
+
+### SpannerDb.execute_query(query_string, params, transaction)
+Execute query string
+```markdown
+- params:
+    - query_string:
+        - Sql select query string
+        - Type: str
+        - Required
+    - params:
+        - Sql params
+        - Type: dict
+    - transaction
+        - DB transaction
+        - Type: Transaction
+        - Default value: None
+        - Optional
+- return:
+    - Result set
+    - Type dict
+```
+eg:
+```python
+query_string = 'SELECT * FROM users WHERE name=@name'
+results = SpannerDb.execute_query(query_string, {'name': 'sanish'})
+```
+
+### SpannerDb.execute_ddl_query(ddl_query_string)
+Execute DDL query string
+```markdown
+- params:
+    - query_string:
+        - DDL query string
+        - Type: str
+        - Required
+```
+
+eg:
+```python
+query_string = '''
+                CREATE TABLE sample (
+                    id STRING(64) NOT NULL,
+                    address STRING(MAX),
+                    is_active BOOL NOT NULL,
+                    join_date DATE,
+                    modified_at TIMESTAMP,
+                    name STRING(100) NOT NULL,
+                    points INT64 NOT NULL,
+                ) PRIMARY KEY (id)
+                '''
+SpannerDb.execute_ddl_query(query_string)
+```
+
+### SpannerDb.insert_data(table_name, columns, data)
+Insert given table data
+```markdown
+- params:
+    - table_name:
+        - Db table name
+        - Type: str
+        - Required
+    - columns:
+        - list of columns in which date inserting
+        - Type: list
+        - Required
+        - eg. ['id', 'name']
+    - data:
+        - List of data
+        - Type: list
+        - Required
+        - eg. [(value11, value12), (value21, value22)]
+```
+### SpannerDb.update_data(table_name, columns, data)
+Update given table data
+```markdown
+- params:
+    - table_name:
+        - Db table name
+        - Type: str
+        - Required
+    - columns:
+        - list of columns in which date updating
+        - Type: list
+        - Required
+        - eg. ['id', 'name']
+    - data:
+        - List of data
+        - Type: list
+        - Required
+        - eg. [(value11, value12), (value21, value22)]
+```
+
+### SpannerDb.save_data(table_name, columns, data)
+Save given table data
+```markdown
+- params:
+    - table_name:
+        - Db table name
+        - Type: str
+        - Required
+    - columns:
+        - list of columns in which date saving
+        - Type: list
+        - Required
+        - eg. ['id', 'name']
+    - data:
+        - List of data
+        - Type: list
+        - Required
+        - eg. [(value11, value12), (value21, value22)]
+```
+
+### SpannerDb.delete_data(table_name, id_list):
+Delete given ids data row
+```markdown
+- params:
+    - table_name:
+        - Db table name
+        - Type: str
+        - Required
+    - id_list:
+        - id tuple list 
+        - Type: type
+        - eg. [('1',), ('2',)]
+```
+
+## Database Migration
+`DbMigration` class responsible to run Db migration
+
+### setup Db Migration
+- create migration.py file
+- Add following code
+```python
+from spannerorm import DbMigration
+
+
+class Migration(DbMigration):
+    instance_id = ''
+    database_id = ''
+    service_account_json = ''
+
+
+if __name__ == '__main__':
+    Migration.run()
+```
+- Config db connection
+```markdown
+    instance_id: Spanner database instance id
+    database_id: Database name
+    service_account_json: service account json location full path
+```
+
+### Db Migration commands:
+Available Migration Commands:
+```markdown
+    help                                : list available migration commands
+    create [migration_name]             : Create new migration file
+    up                                  : Run all new migrations
+    down                                : Revert back last migration
+    down <int>                          : Revert back last given number of migrations
+```
+eg: python migration.py create user_table            
