@@ -49,6 +49,8 @@ def user_meta_data():
 def one_user():
     criteria = Criteria()
     criteria.add_condition((User.name, 'IS NOT', 'NULL'))
+    criteria.set_order_by(User.name)
+    criteria.set_order_by(User.organization_id, 'DESC')
     print(criteria)
     # criteria.condition([(User.role_id, '=', '1'), (User.organization_id, '=', '4707145032222247178')])
     # criteria.add_condition((User.is_deleted, '=', False))
