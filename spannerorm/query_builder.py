@@ -247,7 +247,6 @@ class QueryBuilder:
         order_by_list = self.criteria.order_by
         order_by_clause = ''
         for order_by in order_by_list:
-            print(order_by)
             sub_order_by_clause = ''
             for prop in order_by.get('order_col'):
                 prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
