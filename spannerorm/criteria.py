@@ -9,10 +9,7 @@ class Criteria(object):
         }
         self._limit = None
         self._offset = None
-        self._order_by = {
-            'order': 'ASC',
-            'order_col': ()
-        }
+        self._order_by = []
         self._join_withs = []
 
     @property
@@ -114,12 +111,18 @@ class Criteria(object):
         if isinstance(order_by_props, property) is False and isinstance(order_by_props, list) is False:
             raise TypeError('order_by_props data type should be [property | list]')
 
-        self._order_by['order'] = order.upper()
+        order_by = {
+            'order': order.upper(),
+            'order_col': ()
+        }
+
         if isinstance(order_by_props, property):
-            self._order_by['order_col'] += (order_by_props,)
+            order_by['order_col'] += (order_by_props,)
         else:
             for order_by_prop in order_by_props:
-                self._order_by['order_col'] += (order_by_prop,)
+                order_by['order_col'] += (order_by_prop,)
+
+        self._order_by.append(order_by)
 
     def join_with(self, relation, join_type='LEFT'):
         """

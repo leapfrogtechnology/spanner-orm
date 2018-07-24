@@ -251,22 +251,35 @@ class QueryBuilder:
         :rtype: str
         :return: order clause
         """
-        order_by = self.criteria.order_by
+        order_by_list = self.criteria.order_by
         order_by_clause = ''
 
-        for prop in order_by.get('order_col'):
-            prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
-            table_name = prop_module_cls._meta().db_table
-            attr = Helper.model_attr_by_prop(prop_module_cls, prop)
+        print(order_by_list)
+
+        for order_by in order_by_list:
+            print(order_by)
+            sub_order_by_clause = ''
+            for prop in order_by.get('order_col'):
+                prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
+                table_name = prop_module_cls._meta().db_table
+                attr = Helper.model_attr_by_prop(prop_module_cls, prop)
+
+                if sub_order_by_clause == '':
+                    sub_order_by_clause += '{table_name}.{db_column}' \
+                        .format(table_name=table_name, db_column=attr.db_column)
+                else:
+                    sub_order_by_clause += ', {table_name}.{db_column}' \
+                        .format(table_name=table_name, db_column=attr.db_column)
 
             if order_by_clause == '':
-                order_by_clause += table_name + '.' + attr.db_column
+                order_by_clause += '{sub_order_by_clause} {order}' \
+                    .format(sub_order_by_clause=sub_order_by_clause, order=order_by.get('order'))
             else:
-                order_by_clause += ', ' + table_name + '.' + attr.db_column
+                order_by_clause += ', {sub_order_by_clause} {order}' \
+                    .format(sub_order_by_clause=sub_order_by_clause, order=order_by.get('order'))
 
         if order_by_clause != '':
-            return 'ORDER BY {order_by_clause} {order_by}'.format(order_by_clause=order_by_clause,
-                                                                  order_by=order_by.get('order'))
+            return 'ORDER BY {order_by_clause}'.format(order_by_clause=order_by_clause)
         else:
             return ''
 
