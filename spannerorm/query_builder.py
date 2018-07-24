@@ -155,7 +155,14 @@ class QueryBuilder:
                 operator = condition[1]
                 param = 'param' + str(self.params_count)
 
-                if operator != 'IN' and operator != 'NOT IN':
+                if operator == 'IS' or operator == 'IS NOT':
+                    if where_clause != '':
+                        where_clause += ' {condition_type} {db_field} {operator} {value}' \
+                            .format(condition_type=condition_type, db_field=db_field, operator=operator, value=condition[2])
+                    else:
+                        where_clause += '{db_field} {operator} {value}' \
+                            .format(db_field=db_field, operator=operator, value=condition[2])
+                elif operator != 'IN' and operator != 'NOT IN':
                     if where_clause != '':
                         where_clause += ' {condition_type} {db_field} {operator} @{param}' \
                             .format(condition_type=condition_type, db_field=db_field, operator=operator, param=param)

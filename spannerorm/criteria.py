@@ -159,7 +159,7 @@ class CriteriaBuilder(object):
         :param operator:
         :return:
         """
-        valid_where_operator = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN']
+        valid_where_operator = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN', 'IS', 'IS NOT']
 
         if isinstance(operator, str) is False or operator.upper() not in ['AND', 'OR']:
             raise TypeError('operator: should be [AND | OR]')
@@ -171,7 +171,7 @@ class CriteriaBuilder(object):
         # if condition like: ('active', '=', True)
         elif isinstance(condition[0], property) is True:
             if condition[1] not in valid_where_operator:
-                raise TypeError('Compare-operator should be in [=, >, <, >=, <=, <>, LIKE, IN, NOT IN]')
+                raise TypeError('Compare-operator should be in [=, >, <, >=, <=, <>, LIKE, IN, NOT IN, IS, IS NOT]')
 
             if operator.upper() == 'AND':
                 where_criteria.get('and_conditions').append(condition)
