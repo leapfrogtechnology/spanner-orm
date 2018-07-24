@@ -707,6 +707,8 @@ Criteria `condition` object provide filter cirteria.
 | NOT IN   | Search for `Not In` Multiple values     | (Task.status, 'NOT IN', ['pending', 'under review'])                 |
 | AND      | Join two condition with `AND` operator  | ((User.name, 'LIKE', '%sa%') , 'AND', (User.is_deleted, '=', False)) |
 | OR       | Join two condition with `OR` operator   | ((User.name, 'LIKE', '%sa%') , 'OR', (User.is_deleted, '=', False))  |
+| IS       | Is null                                 | (User.name, 'IS', 'NULL')                                            |
+| IS NOT   | Is not null                             | (User.name, 'IS NOT', 'NULL')                                        |
 
 
 ##### criteria.limit
