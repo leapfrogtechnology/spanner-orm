@@ -9,10 +9,7 @@ class Criteria(object):
         }
         self._limit = None
         self._offset = None
-        self._order_by = {
-            'order': 'ASC',
-            'order_col': ()
-        }
+        self._order_by = []
         self._join_withs = []
 
     @property
@@ -39,7 +36,6 @@ class Criteria(object):
     def limit(self, value):
         """
         Setter limit criteria
-
         :type value: int
         :param value:
         """
@@ -54,10 +50,8 @@ class Criteria(object):
     def offset(self, value):
         """
         Setter offset criteria
-
         :type value: int
         :param value:
-
         :return:
         """
         if isinstance(value, int) is False:
@@ -69,10 +63,8 @@ class Criteria(object):
     def condition(self, conditions, operator='AND'):
         """
         Set criteria condition that filter result set
-
         :type conditions: list
         :param conditions: list of conditions
-
         :type operator: str
         :param operator: [AND | OR] condition
         """
@@ -85,7 +77,6 @@ class Criteria(object):
     def add_condition(self, condition, operator='AND'):
         """
         Add criteria condition that filter result set
-
         :type condition: tuple
         :param condition: where condition like:
             (User.Id, '=', 1)
@@ -93,7 +84,6 @@ class Criteria(object):
             ((User.id, '=', 1), 'AND', ((User.active, '=', True), 'OR', (User.name, '=', 'sanish')))
             (((User.id, '=', 1), 'AND', ((User.active, '=', True), 'OR', (User.name', '=', 'sanish'))), 'OR', (User.user_name, '=', 'mjsanish')))
             (((User.id, '=', 1), 'AND', ((User.active, '=', True), 'OR', (User.name, '=', 'sanish'))), 'OR', ((User.user_name, '=', 'mjsanish'), 'AND', (User.password, '=', 'pass')))
-
         :param operator:
         :return:
         """
@@ -102,10 +92,8 @@ class Criteria(object):
     def set_order_by(self, order_by_props, order='ASC'):
         """
         Set order by criteria
-
         :type order_by_props: list | property
         :param order_by_props: order by property or list of order by properties
-
         :type order: str
         :param order: 'ASC' OR 'DESC'
         """
@@ -114,20 +102,24 @@ class Criteria(object):
         if isinstance(order_by_props, property) is False and isinstance(order_by_props, list) is False:
             raise TypeError('order_by_props data type should be [property | list]')
 
-        self._order_by['order'] = order.upper()
+        order_by = {
+            'order': order.upper(),
+            'order_col': ()
+        }
+
         if isinstance(order_by_props, property):
-            self._order_by['order_col'] += (order_by_props,)
+            order_by['order_col'] += (order_by_props,)
         else:
             for order_by_prop in order_by_props:
-                self._order_by['order_col'] += (order_by_prop,)
+                order_by['order_col'] += (order_by_prop,)
+
+        self._order_by.append(order_by)
 
     def join_with(self, relation, join_type='LEFT'):
         """
         Add join with criteria
-
         :type relation: property
         :param relation: model relation property
-
         :type join_type: str
         :param join_type: Join type ['LEFT', 'RIGHT', 'FULL']
         """
@@ -145,17 +137,14 @@ class CriteriaBuilder(object):
     def build_where_criteria(cls, where_criteria, condition, operator):
         """
         Build where criteria from condition
-
         :type where_criteria: dict
         :param where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
-
         :type condition: tuple
         :param condition: sub condition like:
             (User.active, '=', True)
             ((User.active, '=', True), 'OR', (User.name, '=', 'sanish'))
             ((User.active, '=', True), 'AND', (User.name, '=', 'sanish'))
             ((User.active, '=', True), 'AND', ((User.name, '=', 'sanish'), 'AND', (User.gender, '=', 'Male')))
-
         :param operator:
         :return:
         """
@@ -199,10 +188,8 @@ class CriteriaBuilder(object):
         """
         Build sub where criteria form sub_condition ((sub_condition1), operator, (sub_condition2))
         eg. (('active', '=', True), 'OR', ('name', '=', 'sanish'))
-
         :type sub_where_criteria: dict
         :param sub_where_criteria: sub where criteria {'and_conditions':list, 'or_conditions':list}
-
         :type sub_condition: tuple
         :param sub_condition: sub condition (('active', '=', True), 'OR', ('name', '=', 'sanish'))
         """

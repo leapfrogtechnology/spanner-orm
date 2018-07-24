@@ -1,8 +1,7 @@
 import six
 import logging
-import spannerorm.base_model
-import spannerorm.criteria
 from datetime import date
+import spannerorm.criteria
 from .helper import Helper
 from .relation import Relation
 
@@ -12,7 +11,6 @@ class QueryBuilder:
         """
         :type model_class: spannerorm.base_model.BaseModel
         :param model_class:
-
         :type criteria: spannerorm.criteria.Criteria
         :param criteria:
         """
@@ -49,7 +47,6 @@ class QueryBuilder:
     def _get_select_clause(self):
         """
         Return select clause
-
         :rtype: str
         :return:
         """
@@ -63,7 +60,6 @@ class QueryBuilder:
     def _get_join_select_clause(self):
         """
         Return join select clause
-
         :rtype: str
         :return:
         """
@@ -88,7 +84,6 @@ class QueryBuilder:
     def _get_model_select_clause(self, model_cls):
         """
         Return select clause of model
-
         :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls:
         :return:
@@ -109,7 +104,6 @@ class QueryBuilder:
     def _get_limit_clause(self):
         """
         Return limit clause
-
         :rtype: str
         :return:
         """
@@ -128,10 +122,8 @@ class QueryBuilder:
     def _parse_condition(self, condition_list, condition_type='AND'):
         """
         Parse condition
-
         :type: dict
         :param condition_list: where condition list
-
         :rtype: str
         :return:
         """
@@ -186,10 +178,8 @@ class QueryBuilder:
     def _build_in_clause(self, in_values):
         """
         Build in clause
-
         :type in_values: list
         :param in_values: in values
-
         :rtype: str
         :return:
         """
@@ -217,7 +207,6 @@ class QueryBuilder:
     def _get_where_clause(self):
         """
         Return where clause string
-
         :rtype: str
         :return:
         """
@@ -233,10 +222,8 @@ class QueryBuilder:
     def _build_where_clause(self, where_conditions):
         """
         Build where clause
-
         :type where_conditions: dict
         :param where_conditions:
-
         :rtype: str
         :return: where clause
         """
@@ -254,26 +241,35 @@ class QueryBuilder:
     def _get_order_by_clause(self):
         """
         Build order clause
-
         :rtype: str
         :return: order clause
         """
-        order_by = self.criteria.order_by
+        order_by_list = self.criteria.order_by
         order_by_clause = ''
+        for order_by in order_by_list:
+            print(order_by)
+            sub_order_by_clause = ''
+            for prop in order_by.get('order_col'):
+                prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
+                table_name = prop_module_cls._meta().db_table
+                attr = Helper.model_attr_by_prop(prop_module_cls, prop)
 
-        for prop in order_by.get('order_col'):
-            prop_module_cls = Helper.model_cls_by_module_name(prop.fget.__module__)
-            table_name = prop_module_cls._meta().db_table
-            attr = Helper.model_attr_by_prop(prop_module_cls, prop)
+                if sub_order_by_clause == '':
+                    sub_order_by_clause += '{table_name}.{db_column}' \
+                        .format(table_name=table_name, db_column=attr.db_column)
+                else:
+                    sub_order_by_clause += ', {table_name}.{db_column}' \
+                        .format(table_name=table_name, db_column=attr.db_column)
 
             if order_by_clause == '':
-                order_by_clause += table_name + '.' + attr.db_column
+                order_by_clause += '{sub_order_by_clause} {order}' \
+                    .format(sub_order_by_clause=sub_order_by_clause, order=order_by.get('order'))
             else:
-                order_by_clause += ', ' + table_name + '.' + attr.db_column
+                order_by_clause += ', {sub_order_by_clause} {order}' \
+                    .format(sub_order_by_clause=sub_order_by_clause, order=order_by.get('order'))
 
         if order_by_clause != '':
-            return 'ORDER BY {order_by_clause} {order_by}'.format(order_by_clause=order_by_clause,
-                                                                  order_by=order_by.get('order'))
+            return 'ORDER BY {order_by_clause}'.format(order_by_clause=order_by_clause)
         else:
             return ''
 
@@ -304,10 +300,8 @@ class QueryBuilder:
     def _set_multi_join_select_clause(self, model_cls, relation_name):
         """
         set OnToMany or ManyToMany Join select clause
-
         :type model_cls: spannerorm.base_model.BaseModel
         :param model_cls: refer to model class
-
         :type relation_name: str
         :param relation_name: relation name
         """
@@ -334,16 +328,12 @@ class QueryBuilder:
     def _set_multi_join_data(self, relation_name):
         """
         Set join sub query data
-
         :type relation_name: str
         :param relation_name: Relation name
-
         :type db_table: str
         :param db_table: db table name
-
         :type join_clause: str
         :param join_clause: join clause
-
         :type where_clause: str
         :param where_clause: where clause
         """
@@ -361,7 +351,6 @@ class QueryBuilder:
     def get_query(self, in_ids=None):
         """
         Build query base on criteria and return query string
-
         :rtype: str
         :return: query string
         """
@@ -415,7 +404,6 @@ class QueryBuilder:
     def get_count(self):
         """
         Build count query string
-
         :rtype: str
         :return: query string
         """
@@ -433,7 +421,6 @@ class QueryBuilder:
     def get_primary_keys(self):
         """
         Build query string that return primaries key base on criteria
-
         :rtype: str
         :return: query string
         """
