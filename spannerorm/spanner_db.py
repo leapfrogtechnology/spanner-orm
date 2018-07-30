@@ -1,4 +1,5 @@
 from datetime import date
+import six
 from .helper import Helper
 from .executor import Executor
 from google.cloud.spanner_v1.transaction import Transaction
@@ -25,12 +26,11 @@ class SpannerDb(object):
         """
         param_types = None
         if params is not None:
-            params = {}
             param_types = {}
 
             for key in params:
-                value = param_types.get(key)
-                if isinstance(value, str):
+                value = params.get(key)
+                if isinstance(value, six.string_types):
                     param_types[key] = Type(code=STRING)
                 elif isinstance(value, int):
                     param_types[key] = Type(code=INT64)
