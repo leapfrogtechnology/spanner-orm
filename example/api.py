@@ -250,6 +250,16 @@ def roles():
 
     return jsonify(roles)
 
+@app.route('/test')
+def test():
+    query = '''Select * from sites where name=@name'''
+    SpannerDb.execute_query(query, {
+        'name' : 'Florence'
+    })
+
+    return 'success'
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8282, debug=True)
