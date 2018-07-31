@@ -201,7 +201,9 @@ class BaseModel(object):
 
             join_on_values = []
             for row in result_sets:
-                join_on_values.append(getattr(row, relation_attr.join_on))
+                join_on_value = getattr(row, relation_attr.join_on)
+                if join_on_value:
+                    join_on_values.append(join_on_value)
 
             if len(join_on_values) == 0:
                 return []
