@@ -1,6 +1,12 @@
 # Google Cloud Spanner-ORM:
 Spanner ORM is a simple and small ORM. It easy to learn and intuitive to use.
 
+[![PYPI][pypi-image]][pypi-url]
+[![Version][version-image]][pypi-url]
+
+[pypi-image]: https://img.shields.io/pypi/v/spannerorm.svg?style=flat-square
+[pypi-url]: https://pypi.org/project/spannerorm/
+[version-image]: https://img.shields.io/pypi/pyversions/spannerorm.svg?style=flat-square   
 ```
 product:
   name: Google Cloud Spanner ORM
