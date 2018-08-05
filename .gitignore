@@ -3,3 +3,6 @@
 /venv/
 /service_account.json
 /venv3/
+/build/
+/dist/
+/spannerorm.egg-info/
