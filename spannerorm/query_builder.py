@@ -211,13 +211,18 @@ class QueryBuilder:
         :return:
         """
         where_conditions = self.criteria.where
-        self.params_count = 0
-        self.params = {}
-        self.param_types = {}
-
         where_clause = self._build_where_clause(where_conditions)
 
         return 'WHERE ' + where_clause if where_clause else ''
+
+    def _get_relation_condition_clause(self, condition):
+        """
+        Return join condition clause string
+        :rtype: str
+        :return:
+        """
+        join_condition = self._build_where_clause(condition)
+        return 'AND ' + join_condition if join_condition else ''
 
     def _build_where_clause(self, where_conditions):
         """
@@ -287,12 +292,16 @@ class QueryBuilder:
             refer_table = refer_model._meta().db_table
             join_on = join_attr.join_on
             refer_to = join_attr.refer_to
+            join_condition = join.get('condition')
+            join_condition_clause = ''
+            if join_condition:
+                join_condition_clause = self._get_relation_condition_clause(join_condition)
 
             if join_clause != '':
                 join_clause += ' '
 
-            join_clause += '{} JOIN {} on {}.{}={}.{}' \
-                .format(join.get('join_type'), refer_table, table_name, join_on, refer_table, refer_to)
+            join_clause += '{} JOIN {} on {}.{}={}.{} {}' \
+                .format(join.get('join_type'), refer_table, table_name, join_on, refer_table, refer_to, join_condition_clause)
 
         return join_clause
 
