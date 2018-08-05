@@ -69,8 +69,9 @@ def user_by_pk():
 @app.route('/user/find_all')
 def find_all_users():
     criteria = Criteria()
-    criteria.join_with(User.role)
-    criteria.condition([(User.email, 'LIKE', '%@lftechnology.com')])
+    criteria.join_with(User.role, join_condition=((Role.name, '=', 'Admin'), 'AND', (Role.is_deleted, '=', False)))
+    criteria.add_condition(((User.is_deleted, '=', False), 'AND', (User.name, '=', 'Sagar Chamling')))
+    # criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
     # criteria.add_condition((User.role_id, 'IN', ['1', '2']))
     # criteria.add_condition((User.organization_id, 'NOT IN', ['4707145032222247178']))
     criteria.set_order_by(User.email, 'ASC')
