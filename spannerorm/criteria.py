@@ -115,20 +115,35 @@ class Criteria(object):
 
         self._order_by.append(order_by)
 
-    def join_with(self, relation, join_type='LEFT'):
+    def join_with(self, relation, join_type='LEFT', join_condition=None):
         """
         Add join with criteria
         :type relation: property
         :param relation: model relation property
         :type join_type: str
         :param join_type: Join type ['LEFT', 'RIGHT', 'FULL']
+        :type join_condition: tuple
+        :param join_condition: join condition
         """
         if isinstance(relation, property) is False:
             raise TypeError('join_with: should be relational property')
         if join_type.upper() not in ['LEFT', 'RIGHT', 'FULL']:
             raise TypeError('join_type should be [LEFT | RIGHT | FULL]')
 
-        self._join_withs.append({'relation': relation, 'join_type': join_type})
+        condition = None
+        if join_condition:
+            condition = CriteriaBuilder.build_where_criteria({
+                'and_conditions': [],
+                'or_conditions': []
+            }, join_condition, 'AND')
+
+        self._join_withs.append({
+            'relation': relation,
+            'join_type': join_type,
+            'condition': condition
+        })
+
+        print(self._join_withs)
 
 
 class CriteriaBuilder(object):
@@ -180,6 +195,8 @@ class CriteriaBuilder(object):
                 where_criteria.get('and_conditions').append(child_where_criteria)
             else:
                 where_criteria.get('or_conditions').append(child_where_criteria)
+
+            return where_criteria
         else:
             raise TypeError('Invalid criteria condition: {}'.format(condition))
 

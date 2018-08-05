@@ -766,7 +766,7 @@ criteria = Criteria()
 criteria.set_order_by([User.name, User.email])
 ```
 
-##### criteria.oin_with(relation, join_type)
+##### criteria.oin_with(relation, join_type, join_condition)
 - Add join with criteria. For joining should define relation in model
 `````markdown
 - params:
@@ -780,12 +780,16 @@ criteria.set_order_by([User.name, User.email])
         - Default value: 'LEFT'
         - Optional
         - Allow values: [LEFT, RIGHT, FULL]
+    - join_condition:
+        - Define join condition
+        - Type: tuple
+        - Optional
 `````
 
 eg: `LEFT JOIN users on roles.id=users.role_id WHERE roles.name='admin' AND users.email='mjsanish+admin@gmail.com'` 
 ```python
 criteria = Criteria()
-criteria.join_with(Role.users)
+criteria.join_with(Role.users, join_condition=(User.is_deleted, '=', False))
 criteria.add_condition((Role.name, '=', 'admin'))
 criteria.add_condition((User.email, '=', 'mjsanish+admin@gmail.com'))
 ```
