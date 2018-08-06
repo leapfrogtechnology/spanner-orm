@@ -26,25 +26,25 @@ def execute_transaction(func, *args, **kwargs):
                 transaction = session.transaction()
             if transaction._transaction_id is None:
                 transaction.begin()
-        try:
-            response = func(transaction=transaction, *args, **kwargs)
-            if max_retry:
-                raise Aborted('Fail to process')
-            transaction.commit()
-            return response
-        except Aborted as error:
-            del transaction
-            if max_retry:
-                logging.warn('Transaction Aborted; Will Retry in 1 sec...')
-                time.sleep(1)
-            else:
+            try:
+                response = func(transaction=transaction, *args, **kwargs)
+                if max_retry:
+                    raise Aborted('Fail to process')
+                transaction.commit()
+                return response
+            except Aborted as error:
+                del transaction
+                if max_retry:
+                    logging.warn('Transaction Aborted; Will Retry in 1 sec...')
+                    time.sleep(1)
+                else:
+                    logging.error(error)
+                    raise SpannerException('Transaction Aborted')
+            except GoogleAPICallError as error:
+                del transaction
                 logging.error(error)
-                raise SpannerException('Transaction Aborted')
-        except GoogleAPICallError as error:
-            del transaction
-            logging.error(error)
-            raise SpannerException('Spanner Db Api Call Error')
-        except Exception as error:
-            transaction.rollback()
-            logging.error(error)
-            raise error
+                raise SpannerException('Spanner Db Api Call Error')
+            except Exception as error:
+                transaction.rollback()
+                logging.error(error)
+                raise error
