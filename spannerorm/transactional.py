@@ -28,8 +28,6 @@ def execute_transaction(func, *args, **kwargs):
                 transaction.begin()
             try:
                 response = func(transaction=transaction, *args, **kwargs)
-                if max_retry:
-                    raise Aborted('Fail to process')
                 transaction.commit()
                 return response
             except Aborted as error:
