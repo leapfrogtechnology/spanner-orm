@@ -33,6 +33,8 @@ def execute_transaction(func, *args, **kwargs):
                 transaction.commit()
                 return response
             except Aborted as error:
+                transaction.rollback()
+                session._transaction = None
                 del transaction
                 if max_retry:
                     logging.warn('Transaction Aborted; Will Retry in 1 sec...')
