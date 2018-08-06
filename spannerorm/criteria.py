@@ -143,8 +143,6 @@ class Criteria(object):
             'condition': condition
         })
 
-        print(self._join_withs)
-
 
 class CriteriaBuilder(object):
 
