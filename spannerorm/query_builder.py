@@ -292,6 +292,7 @@ class QueryBuilder:
             refer_table = refer_model._meta().db_table
             join_on = join_attr.join_on
             refer_to = join_attr.refer_to
+            refer_attr = Helper.model_attr_by_prop_name(refer_model, refer_to)
             join_condition = join.get('condition')
             join_condition_clause = ''
             if join_condition:
@@ -301,7 +302,7 @@ class QueryBuilder:
                 join_clause += ' '
 
             join_clause += '{} JOIN {} on {}.{}={}.{} {}' \
-                .format(join.get('join_type'), refer_table, table_name, join_on, refer_table, refer_to, join_condition_clause)
+                .format(join.get('join_type'), refer_table, table_name, join_on, refer_table, refer_attr.db_column, join_condition_clause)
 
         return join_clause
 

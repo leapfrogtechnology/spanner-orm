@@ -182,7 +182,8 @@ class DataParser(object):
             refer_model = Relation.get_refer_model(model_class, relation.relation_name)
             if refer_model is not None:
                 db_table = refer_model._meta().db_table
-                property_relation_map[db_table + '.' + relation.refer_to] = attr_name
+                refer_attr = Helper.model_attr_by_prop_name(refer_model, relation.refer_to)
+                property_relation_map[db_table + '.' + refer_attr.db_column] = attr_name
 
         return property_relation_map
 
