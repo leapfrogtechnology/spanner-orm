@@ -372,12 +372,13 @@ class QueryBuilder:
         limit_clause = self._get_limit_clause() if self.with_multi_joins is False else ''
         if in_ids:
             primary_key = self.meta.primary_key
+            primary_key_attr = Helper.model_attr_by_prop_name(self.model_class, primary_key)
             if where_clause != '':
                 where_clause += ' AND {db_table}.{primary_key} IN {in_clause}' \
                     .format(db_table=db_table, primary_key=primary_key, in_clause=self._build_in_clause(in_ids))
             else:
                 where_clause = 'WHERE {db_table}.{primary_key} IN {in_clause}' \
-                    .format(db_table=db_table, primary_key=primary_key, in_clause=self._build_in_clause(in_ids))
+                    .format(db_table=db_table, primary_key=primary_key_attr.db_column, in_clause=self._build_in_clause(in_ids))
 
         select_query = 'SELECT {select_clause} FROM {db_table} {join_clause} {where_clause} {order_by_clause} {limit_clause}' \
             .format(select_clause=select_clause, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
@@ -435,13 +436,14 @@ class QueryBuilder:
         :return: query string
         """
         primary_key = self.meta.primary_key
+        primary_key_attr = Helper.model_attr_by_prop_name(self.model_class, primary_key)
         db_table = self.table_name
         join_clause = self._get_join_clause()
         where_clause = self._get_where_clause()
         limit_clause = self._get_limit_clause()
 
         select_primary_key_query = 'SELECT DISTINCT({db_table}.{primary_key}) FROM {db_table} {join_clause} {where_clause} {limit_clause}' \
-            .format(primary_key=primary_key, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
+            .format(primary_key=primary_key_attr.db_column, db_table=db_table, join_clause=join_clause, where_clause=where_clause,
                     limit_clause=limit_clause)
         logging.debug('\n Query: %s \n Params: %s \n Params Types: %s', select_primary_key_query, self.params,
                       self.param_types)
