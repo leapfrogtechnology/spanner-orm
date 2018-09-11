@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='spannerorm',
-    version='0.1.16',
+    version='0.1.17',
     author='Sanish Maharjan',
     author_email='sanishmaharjan@lftechnology.com',
     description='ORM for cloud spanner',

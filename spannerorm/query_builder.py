@@ -375,7 +375,7 @@ class QueryBuilder:
             primary_key_attr = Helper.model_attr_by_prop_name(self.model_class, primary_key)
             if where_clause != '':
                 where_clause += ' AND {db_table}.{primary_key} IN {in_clause}' \
-                    .format(db_table=db_table, primary_key=primary_key, in_clause=self._build_in_clause(in_ids))
+                    .format(db_table=db_table, primary_key=primary_key_attr.db_column, in_clause=self._build_in_clause(in_ids))
             else:
                 where_clause = 'WHERE {db_table}.{primary_key} IN {in_clause}' \
                     .format(db_table=db_table, primary_key=primary_key_attr.db_column, in_clause=self._build_in_clause(in_ids))
